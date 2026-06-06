@@ -1,0 +1,159 @@
+# Veloura
+
+Veloura is a reusable Python audio transition engine for smooth queue playback.
+It provides FFmpeg-backed PCM decoding, equal-power crossfades, transition
+analysis, beat-aware planning, and a small CLI for local inspection.
+
+Veloura is framework-agnostic. Use it in streamer tools, radio pipelines,
+desktop music apps, Discord/Twitch bots, or backend automation without tying
+your project to one bot implementation.
+
+## Features
+
+- Equal-power crossfade mixing for signed 16-bit PCM audio
+- Queue/session helpers for buffering, skip, and current-track snapshots
+- Smart transition planning based on track duration, silence trim, and loudness
+- Beat/BPM analysis with beat-aware transition plans
+- Project-local or user-cache transition analysis storage
+- Optional `yt-dlp` stream resolution for URLs and search queries
+- Optional Discord audio source compatibility
+- Pure-Python PCM fallback for Python builds without `audioop`
+
+## Requirements
+
+- Python 3.12 or newer
+- FFmpeg for decoding, playback, silence analysis, loudness analysis, and beat
+  analysis
+- `yt-dlp` only when resolving online stream/search inputs
+- `discord.py` and `PyNaCl` only when using the Discord audio source directly
+
+## Installation
+
+Install the core package:
+
+```bash
+pip install veloura-audio
+```
+
+Install stream resolution support:
+
+```bash
+pip install "veloura-audio[stream]"
+```
+
+Install Discord voice support:
+
+```bash
+pip install "veloura-audio[discord]"
+```
+
+Install every optional integration:
+
+```bash
+pip install "veloura-audio[all]"
+```
+
+## Quick Start
+
+```python
+from veloura.audio import AudioTrack, CrossfadeSession, transition_preset
+
+config = transition_preset("streamer")
+
+track = AudioTrack.from_source(
+    "/music/current-song.flac",
+    title="Artist - Current Song",
+    duration=184,
+)
+
+session = CrossfadeSession(volume=0.65, crossfade_seconds=config.base_crossfade_seconds)
+session.source.enqueue(track)
+```
+
+For online sources, install `veloura-audio[stream]` and resolve a playable stream:
+
+```python
+import asyncio
+
+from veloura.audio import resolve_stream_track, transition_preset
+
+
+async def main():
+    track = await resolve_stream_track(
+        "artist song official audio",
+        transition_config=transition_preset("streamer"),
+    )
+    print(track.title, track.stream_url)
+
+
+asyncio.run(main())
+```
+
+## CLI
+
+Veloura exposes the same core tools through `python -m veloura` or the
+`veloura` console script:
+
+```bash
+python -m veloura presets
+python -m veloura prepare ./song.mp3 --preset streamer
+python -m veloura analyze ./song.mp3
+python -m veloura plan ./current.mp3 ./next.mp3 --preset broadcast
+```
+
+For YouTube/search inputs, install `veloura-audio[stream]` and add `--resolve`:
+
+```bash
+python -m veloura plan "current song" "next song" --preset streamer --resolve
+```
+
+Transition analysis is cached under `~/.cache/veloura` by default, or under the
+directory set in `VELOURA_CACHE_DIR`. Use `--cache-dir` for a project-local
+cache, or `--no-cache` when comparing fresh analysis.
+
+## Presets
+
+- `streamer`: balanced transitions for livestream/background music
+- `broadcast`: longer, smoother radio-style blends
+- `low-latency`: shorter analysis windows for weaker machines or fast queues
+
+Aliases such as `streamer-safe`, `broadcast-smooth`, and `fast` are also
+available.
+
+## Standalone Example
+
+The example player resolves local files or stream queries, prepares transition
+analysis, mixes the queue, and pipes PCM into `ffplay`:
+
+```bash
+python examples/streamer_player.py ./song-a.mp3 ./song-b.mp3 --preset streamer
+python examples/streamer_player.py ./song-a.mp3 ./song-b.mp3 --cache-dir ./veloura-cache
+```
+
+## Public API
+
+Prefer these names for new projects:
+
+- `AudioTrack`
+- `CrossfadeSession`
+- `FileAnalysisCache`
+- `transition_preset`
+- `prepare_smart_transition`
+- `plan_beat_transition`
+- `resolve_stream_track`
+
+Compatibility names:
+
+- `MixerTrack`
+- `CrossfadeAudioSource`
+
+## Development Checks
+
+```bash
+python3 -m unittest discover -s tests
+python3 -m py_compile veloura/*.py veloura/audio/*.py examples/*.py
+```
+
+Before publishing publicly, confirm the package name on PyPI, add project URLs,
+choose the license/copyright owner, build the distribution, and publish to
+TestPyPI first.
