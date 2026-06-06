@@ -129,31 +129,3 @@ analysis, mixes the queue, and pipes PCM into `ffplay`:
 python examples/streamer_player.py ./song-a.mp3 ./song-b.mp3 --preset streamer
 python examples/streamer_player.py ./song-a.mp3 ./song-b.mp3 --cache-dir ./veloura-cache
 ```
-
-## Public API
-
-Prefer these names for new projects:
-
-- `AudioTrack`
-- `CrossfadeSession`
-- `FileAnalysisCache`
-- `transition_preset`
-- `prepare_smart_transition`
-- `plan_beat_transition`
-- `resolve_stream_track`
-
-Compatibility names:
-
-- `MixerTrack`
-- `CrossfadeAudioSource`
-
-## Development Checks
-
-```bash
-python3 -m unittest discover -s tests
-python3 -m py_compile veloura/*.py veloura/audio/*.py examples/*.py
-```
-
-Before publishing publicly, confirm the package name on PyPI, add project URLs,
-choose the license/copyright owner, build the distribution, and publish to
-TestPyPI first.
