@@ -8,6 +8,7 @@ version = "0.3.0"
 description = "Reusable Python audio engine with crossfade and beat-aware transition planning."
 readme = "README.md"
 requires-python = ">=3.12"
+license = "MIT"
 keywords = [
     "audio",
     "crossfade",
