@@ -116,9 +116,15 @@ cache, or `--no-cache` when comparing fresh analysis.
 - `streamer`: balanced transitions for livestream/background music
 - `broadcast`: longer, smoother radio-style blends
 - `low-latency`: shorter analysis windows for weaker machines or fast queues
+- `automix`: beat-aware pair planning with conservative tempo matching
 
-Aliases such as `streamer-safe`, `broadcast-smooth`, and `fast` are also
+Aliases such as `streamer-safe`, `broadcast-smooth`, `auto-mix`, and `fast` are also
 available.
+
+For adjacent tracks, call `prepare_automix_transition_pair` before playback of
+the next track starts. It analyzes beat windows, applies a pair-specific
+crossfade length, trims weak intro audio on confident matches, and nudges tempo
+only within a small safe range.
 
 ## Standalone Example
 

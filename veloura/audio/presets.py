@@ -52,7 +52,23 @@ LOW_LATENCY = normalize_transition_config(
     )
 )
 
+AUTOMIX = normalize_transition_config(
+    replace(
+        STREAMER_SAFE,
+        base_crossfade_seconds=9.0,
+        min_crossfade_seconds=3.0,
+        max_crossfade_seconds=14.0,
+        analysis_window_seconds=28.0,
+        analysis_timeout_seconds=6.0,
+        max_intro_trim_seconds=8.0,
+        max_outro_trim_seconds=10.0,
+        loudness_target_db=-18.0,
+    )
+)
+
 PRESETS = {
+    "automix": AUTOMIX,
+    "auto-mix": AUTOMIX,
     "streamer": STREAMER_SAFE,
     "streamer-safe": STREAMER_SAFE,
     "broadcast": BROADCAST_SMOOTH,

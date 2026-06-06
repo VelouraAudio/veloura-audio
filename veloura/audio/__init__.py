@@ -24,6 +24,14 @@ from .beat import (
     synthetic_pulse_energy,
     unique_starts,
 )
+from .automix import (
+    AutoMixPlan,
+    apply_automix_plan,
+    current_analysis_starts,
+    plan_automix_transition,
+    prepare_automix_transition_pair,
+    tempo_ratio_for_bpm,
+)
 from .cache import (
     FileAnalysisCache,
     build_transition_cache_key,
@@ -34,6 +42,7 @@ from .ffmpeg_stream import FFmpegPCMStream
 from .models import AudioTrack, MixerTrack
 from .pcm import pcm_add, pcm_mul, pcm_rms
 from .presets import (
+    AUTOMIX,
     BROADCAST_SMOOTH,
     LOW_LATENCY,
     STREAMER_SAFE,
@@ -72,6 +81,12 @@ __all__ = [
     "profile_to_dict",
     "synthetic_pulse_energy",
     "unique_starts",
+    "AutoMixPlan",
+    "apply_automix_plan",
+    "current_analysis_starts",
+    "plan_automix_transition",
+    "prepare_automix_transition_pair",
+    "tempo_ratio_for_bpm",
     "FileAnalysisCache",
     "build_transition_cache_key",
     "default_cache_dir",
@@ -82,6 +97,7 @@ __all__ = [
     "pcm_add",
     "pcm_mul",
     "pcm_rms",
+    "AUTOMIX",
     "BROADCAST_SMOOTH",
     "LOW_LATENCY",
     "STREAMER_SAFE",
