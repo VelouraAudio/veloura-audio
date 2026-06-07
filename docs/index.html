@@ -128,51 +128,49 @@ session.source.enqueue(next_track)</code></pre>
 
       <section id="demo" class="section demo-section">
         <div class="demo-header">
-          <p class="section-label">Demo Sources</p>
-          <h2>Official NCS tracks for local AutoMix testing.</h2>
+          <p class="section-label">Audio Demo</p>
+          <h2>Listen to a rendered ending transition.</h2>
           <p>
-            These embeds use the official NCS YouTube uploads. Veloura does not
-            redistribute the audio files; run the local example to test the transition
-            engine with the same sources.
+            This clip uses two CC0 music excerpts and was rendered with Veloura's
+            <code>PCMQueuePlayer</code>. It is bundled as a small listenable example
+            of the crossfade engine.
+          </p>
+          <div class="audio-demo">
+            <div>
+              <h3>Veloura CC0 Music Transition</h3>
+              <p>Two public-domain-style music excerpts blended with an equal-power ending transition.</p>
+            </div>
+            <audio controls preload="metadata" src="./assets/veloura-transition-demo.wav">
+              Your browser does not support the audio element.
+            </audio>
+          </div>
+        </div>
+        <div class="demo-header source-header">
+          <p class="section-label">Demo Sources</p>
+          <h2>CC0 music sources, credited clearly.</h2>
+          <p>
+            The public demo is rendered from OpenGameArt tracks listed as CC0.
+            Attribution is optional under CC0, but the sources are shown here for
+            provenance.
           </p>
         </div>
         <div class="demo-grid">
           <article>
-            <div class="video-embed">
-              <iframe
-                src="https://www.youtube.com/embed/U9pGr6KMdyg"
-                title="Lost Sky - Where We Started feat. Jex"
-                loading="lazy"
-                allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
-                allowfullscreen
-              ></iframe>
-            </div>
-            <h3>Where We Started</h3>
+            <h3>Empacotatron</h3>
             <p>
-              Song: Lost Sky - Where We Started (feat. Jex) [NCS Release]<br />
-              Music provided by NoCopyrightSounds<br />
-              Free Download/Stream: <a href="https://ncs.io/WhereWeStarted">ncs.io/WhereWeStarted</a>
+              By Fupi. Listed as CC0 on OpenGameArt.
+              <a href="https://opengameart.org/content/empacotatron">View source</a>.
             </p>
           </article>
           <article>
-            <div class="video-embed">
-              <iframe
-                src="https://www.youtube.com/embed/S19UcWdOA-I"
-                title="TULE - Fearless pt.II feat. Chris Linton"
-                loading="lazy"
-                allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
-                allowfullscreen
-              ></iframe>
-            </div>
-            <h3>Fearless pt.II</h3>
+            <h3>Rhythm Garden</h3>
             <p>
-              Song: TULE - Fearless pt.II (feat. Chris Linton) [NCS Release]<br />
-              Music provided by NoCopyrightSounds<br />
-              Free Download/Stream: <a href="https://ncs.io/Fearless2">ncs.io/Fearless2</a>
+              By congusbongus. Listed as CC0 on OpenGameArt.
+              <a href="https://opengameart.org/content/rhythm-garden">View source</a>.
             </p>
           </article>
         </div>
-        <pre class="code-panel demo-command"><code>python examples/ncs_automix_demo.py</code></pre>
+        <pre class="code-panel demo-command"><code>python examples/generate_transition_demo_audio.py</code></pre>
       </section>
 
       <section class="section use-cases">

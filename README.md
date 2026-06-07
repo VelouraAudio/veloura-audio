@@ -143,16 +143,19 @@ python examples/streamer_player.py ./song-a.mp3 ./song-b.mp3 --preset streamer
 python examples/streamer_player.py ./song-a.mp3 ./song-b.mp3 --cache-dir ./veloura-cache
 ```
 
-## NCS AutoMix Demo
+## Free Transition Demo
 
-The NCS demo uses official NCS source URLs and does not bundle or redistribute
-the tracks. Install the stream extra, then run:
+The website includes a small transition clip rendered from CC0 music sources
+with `PCMQueuePlayer`. Regenerate it with:
 
 ```bash
-python examples/ncs_automix_demo.py --print-credits
+python examples/generate_transition_demo_audio.py
 ```
 
-Default demo sources:
+Demo music sources:
 
-- Lost Sky - Where We Started (feat. Jex) [NCS Release]
-- TULE - Fearless pt.II (feat. Chris Linton) [NCS Release]
+- Empacotatron by Fupi: <https://opengameart.org/content/empacotatron>
+- Rhythm Garden by congusbongus: <https://opengameart.org/content/rhythm-garden>
+
+Both source pages list the license as CC0. Attribution is not required by CC0,
+but Veloura credits the sources so the demo has clear provenance.

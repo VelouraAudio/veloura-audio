@@ -13,7 +13,7 @@ from veloura.audio import (
     planned_crossfade_seconds,
     prepare_smart_transition,
 )
-from veloura.audio.ffmpeg_stream import atempo_filter_chain
+from veloura.audio.ffmpeg_stream import atempo_filter_chain, build_ffmpeg_pcm_command, should_use_reconnect
 
 
 def run(coro):
@@ -155,6 +155,15 @@ class CrossfadeSessionTests(unittest.TestCase):
         self.assertEqual(atempo_filter_chain(1.0), "")
         self.assertEqual(atempo_filter_chain(1.004), "")
         self.assertEqual(atempo_filter_chain(1.08), "atempo=1.08")
+
+    def test_ffmpeg_reconnect_flags_are_url_only(self):
+        local = MixerTrack("local", "/music/song.wav", "web", 180, 42)
+        remote = MixerTrack("remote", "https://cdn.example.test/song", "web", 180, 42)
+
+        self.assertFalse(should_use_reconnect(local.stream_url))
+        self.assertTrue(should_use_reconnect(remote.stream_url))
+        self.assertNotIn("-reconnect", build_ffmpeg_pcm_command("ffmpeg", local))
+        self.assertIn("-reconnect", build_ffmpeg_pcm_command("ffmpeg", remote))
 
     def test_smart_transition_adapts_short_tracks(self):
         config = SmartTransitionConfig(

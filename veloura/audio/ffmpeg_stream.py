@@ -4,6 +4,7 @@ import os
 import select
 import shutil
 import subprocess
+from urllib.parse import urlparse
 
 from .constants import CHANNELS, FRAME_BYTES, FRAME_RATE
 from .models import MixerTrack
@@ -25,56 +26,71 @@ def atempo_filter_chain(tempo: float) -> str:
     return f"atempo={ratio:.6g}"
 
 
+def should_use_reconnect(source: str) -> bool:
+    scheme = urlparse(source or "").scheme.lower()
+    return scheme in {"http", "https"}
+
+
+def build_ffmpeg_pcm_command(ffmpeg: str, track: MixerTrack) -> list[str]:
+    command = [
+        ffmpeg,
+        "-hide_banner",
+        "-nostdin",
+        "-loglevel",
+        "error",
+    ]
+    if should_use_reconnect(track.stream_url):
+        command.extend(
+            [
+                "-reconnect",
+                "1",
+                "-reconnect_streamed",
+                "1",
+                "-reconnect_delay_max",
+                "5",
+            ]
+        )
+    if track.trim_start > 0:
+        command.extend(["-ss", f"{track.trim_start:.3f}"])
+
+    command.extend(
+        [
+            "-i",
+            track.stream_url,
+            "-vn",
+            "-threads",
+            "1",
+        ]
+    )
+
+    if track.playable_duration > 0 and (track.trim_start > 0 or track.trim_end > 0):
+        command.extend(["-t", f"{track.playable_duration:.3f}"])
+
+    tempo_filter = atempo_filter_chain(track.tempo_ratio)
+    if tempo_filter:
+        command.extend(["-af", tempo_filter])
+
+    command.extend(
+        [
+            "-f",
+            "s16le",
+            "-ar",
+            str(FRAME_RATE),
+            "-ac",
+            str(CHANNELS),
+            "pipe:1",
+        ]
+    )
+    return command
+
+
 class FFmpegPCMStream:
     def __init__(self, track: MixerTrack):
         ffmpeg = shutil.which("ffmpeg")
         if not ffmpeg:
             raise RuntimeError("ffmpeg was not found on this machine.")
 
-        command = [
-            ffmpeg,
-            "-hide_banner",
-            "-nostdin",
-            "-loglevel",
-            "error",
-            "-reconnect",
-            "1",
-            "-reconnect_streamed",
-            "1",
-            "-reconnect_delay_max",
-            "5",
-        ]
-        if track.trim_start > 0:
-            command.extend(["-ss", f"{track.trim_start:.3f}"])
-
-        command.extend(
-            [
-                "-i",
-                track.stream_url,
-                "-vn",
-                "-threads",
-                "1",
-            ]
-        )
-
-        if track.playable_duration > 0 and (track.trim_start > 0 or track.trim_end > 0):
-            command.extend(["-t", f"{track.playable_duration:.3f}"])
-
-        tempo_filter = atempo_filter_chain(track.tempo_ratio)
-        if tempo_filter:
-            command.extend(["-af", tempo_filter])
-
-        command.extend(
-            [
-                "-f",
-                "s16le",
-                "-ar",
-                str(FRAME_RATE),
-                "-ac",
-                str(CHANNELS),
-                "pipe:1",
-            ]
-        )
+        command = build_ffmpeg_pcm_command(ffmpeg, track)
         self.process = subprocess.Popen(
             command,
             stdin=subprocess.DEVNULL,
