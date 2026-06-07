@@ -30,6 +30,8 @@ class AutoMixTests(unittest.TestCase):
         self.assertEqual(tempo_ratio_for_bpm(120, 120), 1.0)
         self.assertEqual(tempo_ratio_for_bpm(128, 120), 1.06)
         self.assertEqual(tempo_ratio_for_bpm(112, 120), 0.94)
+        self.assertEqual(tempo_ratio_for_bpm(80, 160), 1.0)
+        self.assertEqual(tempo_ratio_for_bpm(160, 80), 1.0)
         self.assertEqual(tempo_ratio_for_bpm(0, 120), 1.0)
 
     def test_automix_plan_uses_beat_cues_and_tempo_nudge(self):

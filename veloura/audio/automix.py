@@ -33,8 +33,14 @@ def tempo_ratio_for_bpm(current_bpm: float, next_bpm: float, *, max_adjustment: 
 
     if current_bpm <= 0 or next_bpm <= 0:
         return 1.0
-    raw = current_bpm / next_bpm
+    next_reference = compatible_next_bpm(current_bpm, next_bpm)
+    raw = current_bpm / next_reference
     return clamp(raw, 1.0 - max_adjustment, 1.0 + max_adjustment)
+
+
+def compatible_next_bpm(current_bpm: float, next_bpm: float) -> float:
+    candidates = (next_bpm, next_bpm * 0.5, next_bpm * 2.0)
+    return min(candidates, key=lambda candidate: abs(current_bpm - candidate))
 
 
 def plan_automix_transition(

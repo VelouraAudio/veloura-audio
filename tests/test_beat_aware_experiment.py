@@ -61,6 +61,23 @@ class BeatAwareExperimentTests(unittest.TestCase):
         self.assertEqual(plan.reason, "tempo-mismatch-short-blend")
         self.assertLessEqual(plan.crossfade_seconds, 5)
 
+    def test_transition_plan_accepts_double_time_bpm(self):
+        current = analyze_beats_from_energy(
+            synthetic_pulse_energy(bpm=80, seconds=24, frame_seconds=DEFAULT_FRAME_SECONDS),
+            frame_seconds=DEFAULT_FRAME_SECONDS,
+            source="current",
+        )
+        next_track = analyze_beats_from_energy(
+            synthetic_pulse_energy(bpm=160, seconds=24, frame_seconds=DEFAULT_FRAME_SECONDS),
+            frame_seconds=DEFAULT_FRAME_SECONDS,
+            source="next",
+        )
+
+        plan = plan_beat_transition(current, next_track, base_crossfade_seconds=8)
+
+        self.assertEqual(plan.reason, "beat-match")
+        self.assertLessEqual(plan.bpm_delta, 4)
+
     def test_profile_keeps_window_start(self):
         profile = analyze_beats_from_energy(
             synthetic_pulse_energy(bpm=120, seconds=16, frame_seconds=DEFAULT_FRAME_SECONDS),

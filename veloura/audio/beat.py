@@ -351,7 +351,7 @@ def plan_beat_transition(
     max_crossfade_seconds: float = 15.0,
 ) -> BeatTransitionPlan:
     confidence = min(current.confidence, next_track.confidence)
-    bpm_delta = abs(current.bpm - next_track.bpm) if current.bpm and next_track.bpm else 999.0
+    bpm_delta = compatible_bpm_delta(current.bpm, next_track.bpm)
 
     if confidence < MIN_BEAT_CONFIDENCE:
         return BeatTransitionPlan(
@@ -381,6 +381,19 @@ def plan_beat_transition(
         confidence=round(confidence, 3),
         reason=reason,
     )
+
+
+def compatible_bpm_delta(current_bpm: float, next_bpm: float) -> float:
+    if current_bpm <= 0 or next_bpm <= 0:
+        return 999.0
+    candidates = (
+        abs(current_bpm - next_bpm),
+        abs(current_bpm - (next_bpm * 0.5)),
+        abs(current_bpm - (next_bpm * 2.0)),
+        abs((current_bpm * 0.5) - next_bpm),
+        abs((current_bpm * 2.0) - next_bpm),
+    )
+    return min(candidates)
 
 
 def is_actionable_beat_plan(
