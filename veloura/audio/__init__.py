@@ -41,6 +41,7 @@ from .crossfade import CrossfadeAudioSource
 from .ffmpeg_stream import FFmpegPCMStream
 from .models import AudioTrack, MixerTrack
 from .pcm import pcm_add, pcm_mul, pcm_rms
+from .player import PCMQueuePlayer, QueueSnapshot
 from .presets import (
     AUTOMIX,
     BROADCAST_SMOOTH,
@@ -97,6 +98,8 @@ __all__ = [
     "pcm_add",
     "pcm_mul",
     "pcm_rms",
+    "PCMQueuePlayer",
+    "QueueSnapshot",
     "AUTOMIX",
     "BROADCAST_SMOOTH",
     "LOW_LATENCY",

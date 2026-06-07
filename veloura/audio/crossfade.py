@@ -121,6 +121,18 @@ class CrossfadeAudioSource(AudioSourceBase):
         finally:
             self.lock.release()
 
+    def queued_tracks_nonblocking(self) -> tuple[MixerTrack, ...] | None:
+        if not self.lock.acquire(blocking=False):
+            return None
+        try:
+            queued = []
+            if self.next_track:
+                queued.append(self.next_track)
+            queued.extend(self.queue)
+            return tuple(queued)
+        finally:
+            self.lock.release()
+
     def _duration_locked(self, track: MixerTrack | None) -> float:
         if not track:
             return 0.0

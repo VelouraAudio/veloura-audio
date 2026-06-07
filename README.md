@@ -11,7 +11,7 @@ your project to one bot implementation.
 ## Features
 
 - Equal-power crossfade mixing for signed 16-bit PCM audio
-- Queue/session helpers for buffering, skip, and current-track snapshots
+- Discord-independent PCM queue player with snapshots and playback controls
 - Smart transition planning based on track duration, silence trim, and loudness
 - Beat/BPM analysis with beat-aware transition plans
 - Project-local or user-cache transition analysis storage
@@ -56,7 +56,7 @@ pip install "veloura-audio[all]"
 ## Quick Start
 
 ```python
-from veloura.audio import AudioTrack, CrossfadeSession, transition_preset
+from veloura.audio import AudioTrack, PCMQueuePlayer, transition_preset
 
 config = transition_preset("streamer")
 
@@ -66,8 +66,10 @@ track = AudioTrack.from_source(
     duration=184,
 )
 
-session = CrossfadeSession(volume=0.65, crossfade_seconds=config.base_crossfade_seconds)
-session.source.enqueue(track)
+player = PCMQueuePlayer(volume=0.65, crossfade_seconds=config.base_crossfade_seconds)
+player.enqueue(track)
+
+frame = player.read_frame()
 ```
 
 For online sources, install `veloura-audio[stream]` and resolve a playable stream:
@@ -125,6 +127,11 @@ For adjacent tracks, call `prepare_automix_transition_pair` before playback of
 the next track starts. It analyzes beat windows, applies a pair-specific
 crossfade length, trims weak intro audio on confident matches, and nudges tempo
 only within a small safe range.
+
+Apps that manage playback through `PCMQueuePlayer` can call
+`player.prepare_next_transition_pair(...)` when the current and next track are
+known. Discord bots can keep using `CrossfadeAudioSource` as an adapter for
+Discord voice playback.
 
 ## Standalone Example
 
