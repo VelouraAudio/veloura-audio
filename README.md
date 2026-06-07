@@ -142,3 +142,17 @@ analysis, mixes the queue, and pipes PCM into `ffplay`:
 python examples/streamer_player.py ./song-a.mp3 ./song-b.mp3 --preset streamer
 python examples/streamer_player.py ./song-a.mp3 ./song-b.mp3 --cache-dir ./veloura-cache
 ```
+
+## NCS AutoMix Demo
+
+The NCS demo uses official NCS source URLs and does not bundle or redistribute
+the tracks. Install the stream extra, then run:
+
+```bash
+python examples/ncs_automix_demo.py --print-credits
+```
+
+Default demo sources:
+
+- Lost Sky - Where We Started (feat. Jex) [NCS Release]
+- TULE - Fearless pt.II (feat. Chris Linton) [NCS Release]

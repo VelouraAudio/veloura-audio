@@ -1,13 +1,9 @@
 #!/usr/bin/env python3
-"""Minimal standalone streamer player powered by Veloura.
+"""Play an AutoMix demo with official NCS source URLs.
 
-This example does not import the Discord bot. It resolves each argument into an
-audio track, applies Veloura transition analysis, then pipes mixed PCM into
-``ffplay``.
-
-Example:
-
-    python examples/streamer_player.py "./song-a.mp3" "./song-b.mp3"
+The tracks are not bundled with Veloura. This example resolves the official
+NCS YouTube uploads locally, prepares an AutoMix transition pair, and pipes
+Veloura's PCM output to ffplay.
 """
 
 from __future__ import annotations
@@ -27,11 +23,26 @@ from veloura.audio import (
     CHANNELS,
     FRAME_RATE,
     AudioTrack,
-    CrossfadeSession,
     FileAnalysisCache,
+    PCMQueuePlayer,
+    prepare_automix_transition_pair,
     prepare_smart_transition,
     resolve_stream_track,
     transition_preset,
+)
+
+WHERE_WE_STARTED_URL = "https://www.youtube.com/watch?v=U9pGr6KMdyg"
+FEARLESS_PT_II_URL = "https://www.youtube.com/watch?v=S19UcWdOA-I"
+
+NCS_CREDITS = (
+    "Song: Lost Sky - Where We Started (feat. Jex) [NCS Release]\n"
+    "Music provided by NoCopyrightSounds\n"
+    "Free Download/Stream: http://ncs.io/WhereWeStarted\n"
+    "Watch: http://youtu.be/U9pGr6KMdyg\n\n"
+    "Song: TULE - Fearless pt.II (feat. Chris Linton) [NCS Release]\n"
+    "Music provided by NoCopyrightSounds\n"
+    "Free Download/Stream: http://ncs.io/Fearless2\n"
+    "Watch: http://youtu.be/S19UcWdOA-I"
 )
 
 
@@ -75,15 +86,6 @@ async def build_track(source: str, *, preset: str, cache: FileAnalysisCache | No
     return await resolve_stream_track(source, transition_config=config, analysis_cache=cache)
 
 
-async def build_tracks(
-    sources: list[str],
-    *,
-    preset: str,
-    cache: FileAnalysisCache | None,
-) -> list[AudioTrack]:
-    return [await build_track(source, preset=preset, cache=cache) for source in sources]
-
-
 def open_ffplay() -> subprocess.Popen:
     ffplay = shutil.which("ffplay")
     if not ffplay:
@@ -108,39 +110,56 @@ def open_ffplay() -> subprocess.Popen:
     )
 
 
-def play_tracks(tracks: list[AudioTrack], *, volume: float, crossfade: float):
-    session = CrossfadeSession(volume=volume, crossfade_seconds=crossfade)
-    for track in tracks:
-        session.source.enqueue(track)
+def play_tracks(tracks: list[AudioTrack], *, volume: float, crossfade: float) -> None:
+    player = PCMQueuePlayer(volume=volume, crossfade_seconds=crossfade)
+    player.extend(tracks)
 
-    player = open_ffplay()
+    ffplay = open_ffplay()
     try:
         while True:
-            frame = session.source.read()
-            if not frame:
+            frame = player.read_frame()
+            if not frame or not ffplay.stdin:
                 break
-            if not player.stdin:
-                break
-            player.stdin.write(frame)
+            ffplay.stdin.write(frame)
     finally:
-        session.stop()
-        if player.stdin:
-            player.stdin.close()
-        player.wait(timeout=5)
+        player.stop()
+        if ffplay.stdin:
+            ffplay.stdin.close()
+        ffplay.wait(timeout=5)
+
+
+async def run_demo(args: argparse.Namespace) -> list[AudioTrack]:
+    cache = None if args.no_cache else FileAnalysisCache(args.cache_dir)
+    tracks = [
+        await build_track(source, preset=args.preset, cache=cache)
+        for source in args.sources
+    ]
+    if len(tracks) >= 2:
+        config = transition_preset(args.preset)
+        await asyncio.to_thread(prepare_automix_transition_pair, tracks[0], tracks[1], config)
+    return tracks
 
 
 def main(argv: list[str] | None = None) -> int:
-    parser = argparse.ArgumentParser(description="Play a Veloura-powered streamer queue.")
-    parser.add_argument("sources", nargs="+", help="Local files, stream URLs, or yt-dlp search queries.")
-    parser.add_argument("--preset", default="streamer")
+    parser = argparse.ArgumentParser(description="Play a Veloura AutoMix demo with official NCS URLs.")
+    parser.add_argument(
+        "sources",
+        nargs="*",
+        default=[WHERE_WE_STARTED_URL, FEARLESS_PT_II_URL],
+        help="Optional local files, stream URLs, or yt-dlp queries. Defaults to two official NCS uploads.",
+    )
+    parser.add_argument("--preset", default="automix")
     parser.add_argument("--volume", type=float, default=0.65)
-    parser.add_argument("--crossfade", type=float, default=8.0)
+    parser.add_argument("--crossfade", type=float, default=9.0)
     parser.add_argument("--cache-dir")
     parser.add_argument("--no-cache", action="store_true")
+    parser.add_argument("--print-credits", action="store_true")
     args = parser.parse_args(argv)
 
-    cache = None if args.no_cache else FileAnalysisCache(args.cache_dir)
-    tracks = asyncio.run(build_tracks(args.sources, preset=args.preset, cache=cache))
+    if args.print_credits:
+        print(NCS_CREDITS)
+
+    tracks = asyncio.run(run_demo(args))
     play_tracks(tracks, volume=args.volume, crossfade=args.crossfade)
     return 0
 

@@ -20,6 +20,7 @@
         <a href="#install">Install</a>
         <a href="#api">API</a>
         <a href="#automix">AutoMix</a>
+        <a href="#demo">Demo</a>
         <a href="https://github.com/VelouraAudio/veloura-audio">GitHub</a>
       </nav>
     </header>
@@ -36,6 +37,7 @@
           </p>
           <div class="hero-actions" aria-label="Primary actions">
             <a class="button primary" href="#install">Install</a>
+            <a class="button secondary" href="#demo">Demo</a>
             <a class="button secondary" href="https://pypi.org/project/veloura-audio/">PyPI</a>
           </div>
         </div>
@@ -122,6 +124,55 @@ session.source.enqueue(next_track)</code></pre>
             is high. If analysis is weak, it keeps the blend short.
           </p>
         </div>
+      </section>
+
+      <section id="demo" class="section demo-section">
+        <div class="demo-header">
+          <p class="section-label">Demo Sources</p>
+          <h2>Official NCS tracks for local AutoMix testing.</h2>
+          <p>
+            These embeds use the official NCS YouTube uploads. Veloura does not
+            redistribute the audio files; run the local example to test the transition
+            engine with the same sources.
+          </p>
+        </div>
+        <div class="demo-grid">
+          <article>
+            <div class="video-embed">
+              <iframe
+                src="https://www.youtube.com/embed/U9pGr6KMdyg"
+                title="Lost Sky - Where We Started feat. Jex"
+                loading="lazy"
+                allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
+                allowfullscreen
+              ></iframe>
+            </div>
+            <h3>Where We Started</h3>
+            <p>
+              Song: Lost Sky - Where We Started (feat. Jex) [NCS Release]<br />
+              Music provided by NoCopyrightSounds<br />
+              Free Download/Stream: <a href="https://ncs.io/WhereWeStarted">ncs.io/WhereWeStarted</a>
+            </p>
+          </article>
+          <article>
+            <div class="video-embed">
+              <iframe
+                src="https://www.youtube.com/embed/S19UcWdOA-I"
+                title="TULE - Fearless pt.II feat. Chris Linton"
+                loading="lazy"
+                allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
+                allowfullscreen
+              ></iframe>
+            </div>
+            <h3>Fearless pt.II</h3>
+            <p>
+              Song: TULE - Fearless pt.II (feat. Chris Linton) [NCS Release]<br />
+              Music provided by NoCopyrightSounds<br />
+              Free Download/Stream: <a href="https://ncs.io/Fearless2">ncs.io/Fearless2</a>
+            </p>
+          </article>
+        </div>
+        <pre class="code-panel demo-command"><code>python examples/ncs_automix_demo.py</code></pre>
       </section>
 
       <section class="section use-cases">
