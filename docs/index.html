@@ -1,0 +1,155 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Veloura Audio</title>
+    <meta
+      name="description"
+      content="Reusable Python audio transition engine with smart crossfades, beat-aware planning, and Discord-independent queue playback."
+    />
+    <link rel="stylesheet" href="./styles.css" />
+  </head>
+  <body>
+    <header class="site-header">
+      <a class="brand" href="#top" aria-label="Veloura Audio home">
+        <span class="brand-mark" aria-hidden="true"></span>
+        <span>Veloura Audio</span>
+      </a>
+      <nav class="nav" aria-label="Primary navigation">
+        <a href="#install">Install</a>
+        <a href="#api">API</a>
+        <a href="#automix">AutoMix</a>
+        <a href="https://github.com/VelouraAudio/veloura-audio">GitHub</a>
+      </nav>
+    </header>
+
+    <main id="top">
+      <section class="hero">
+        <canvas id="waveform" aria-hidden="true"></canvas>
+        <div class="hero-content">
+          <p class="eyebrow">Python audio transitions for queues, bots, and streamers</p>
+          <h1>Veloura Audio</h1>
+          <p class="hero-copy">
+            A reusable audio engine for equal-power crossfades, beat-aware planning,
+            AutoMix-style transitions, and Discord-independent PCM playback.
+          </p>
+          <div class="hero-actions" aria-label="Primary actions">
+            <a class="button primary" href="#install">Install</a>
+            <a class="button secondary" href="https://pypi.org/project/veloura-audio/">PyPI</a>
+          </div>
+        </div>
+      </section>
+
+      <section class="band">
+        <div class="feature-grid" aria-label="Core features">
+          <article>
+            <h2>Queue Playback</h2>
+            <p>Use <code>PCMQueuePlayer</code> for apps that need frame reads, snapshots, skips, and queue control outside Discord.</p>
+          </article>
+          <article>
+            <h2>Smart Transitions</h2>
+            <p>Trim silence, normalize loudness, and adapt crossfade timing to track duration and analysis results.</p>
+          </article>
+          <article>
+            <h2>AutoMix Planning</h2>
+            <p>Plan adjacent-track transitions with beat confidence, conservative tempo nudging, and safe fallback behavior.</p>
+          </article>
+        </div>
+      </section>
+
+      <section id="install" class="section two-column">
+        <div>
+          <p class="section-label">Install</p>
+          <h2>Small core, optional integrations.</h2>
+          <p>
+            Install only the engine by default. Add stream resolution or Discord voice
+            support when your product needs it.
+          </p>
+        </div>
+        <div class="command-list">
+          <pre><code>pip install veloura-audio</code></pre>
+          <pre><code>pip install "veloura-audio[stream]"</code></pre>
+          <pre><code>pip install "veloura-audio[discord]"</code></pre>
+        </div>
+      </section>
+
+      <section id="api" class="section split">
+        <div>
+          <p class="section-label">Player API</p>
+          <h2>Build playback without inheriting a Discord bot shape.</h2>
+          <p>
+            The player facade keeps app code clear: enqueue prepared tracks, read PCM
+            frames, inspect snapshots, and prepare the next transition when both tracks
+            are known.
+          </p>
+        </div>
+        <pre class="code-panel"><code>from veloura.audio import AudioTrack, PCMQueuePlayer, transition_preset
+
+config = transition_preset("automix")
+player = PCMQueuePlayer(
+    volume=0.65,
+    crossfade_seconds=config.base_crossfade_seconds,
+)
+
+track = AudioTrack.from_source(
+    "song-a.mp3",
+    title="Song A",
+    duration=180,
+)
+
+player.enqueue(track)
+frame = player.read_frame()
+snapshot = player.snapshot().to_dict()</code></pre>
+      </section>
+
+      <section id="automix" class="section split reverse">
+        <pre class="code-panel"><code>from veloura.audio import prepare_automix_transition_pair
+
+plan = prepare_automix_transition_pair(
+    current_track,
+    next_track,
+    transition_preset("automix"),
+)
+
+session.source.enqueue(next_track)</code></pre>
+        <div>
+          <p class="section-label">AutoMix</p>
+          <h2>Pair-aware transitions with conservative fallbacks.</h2>
+          <p>
+            AutoMix analyzes current outro and next intro beat windows, then applies a
+            pair-specific crossfade, intro trim, and small tempo nudge when confidence
+            is high. If analysis is weak, it keeps the blend short.
+          </p>
+        </div>
+      </section>
+
+      <section class="section use-cases">
+        <p class="section-label">Use Cases</p>
+        <h2>One engine, several product surfaces.</h2>
+        <div class="use-case-grid">
+          <article>
+            <h3>Discord Music Bots</h3>
+            <p>Keep <code>CrossfadeAudioSource</code> as the Discord voice adapter while the package handles transition planning.</p>
+          </article>
+          <article>
+            <h3>Radio Streams</h3>
+            <p>Run prepared queues through PCM frame output for continuous livestream or station-style playback.</p>
+          </article>
+          <article>
+            <h3>Music Apps</h3>
+            <p>Use <code>PCMQueuePlayer</code> as the audio engine behind desktop, web, or mobile-style queue products.</p>
+          </article>
+        </div>
+      </section>
+    </main>
+
+    <footer class="footer">
+      <span>MIT licensed.</span>
+      <a href="https://github.com/VelouraAudio/veloura-audio">GitHub</a>
+      <a href="https://pypi.org/project/veloura-audio/">PyPI</a>
+    </footer>
+
+    <script src="./site.js"></script>
+  </body>
+</html>

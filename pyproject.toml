@@ -33,7 +33,8 @@ dependencies = []
 veloura = "veloura.cli:main"
 
 [project.urls]
-Homepage = "https://github.com/VelouraAudio/veloura-audio"
+Homepage = "https://velouraaudio.github.io/veloura-audio/"
+Documentation = "https://velouraaudio.github.io/veloura-audio/"
 Repository = "https://github.com/VelouraAudio/veloura-audio"
 Issues = "https://github.com/VelouraAudio/veloura-audio/issues"
 
