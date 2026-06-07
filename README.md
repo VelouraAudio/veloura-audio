@@ -53,6 +53,12 @@ Install every optional integration:
 pip install "veloura-audio[all]"
 ```
 
+Verify the installed package:
+
+```bash
+python -c "import veloura; print(veloura.__version__)"
+```
+
 ## Quick Start
 
 ```python
@@ -133,6 +139,26 @@ Apps that manage playback through `PCMQueuePlayer` can call
 known. Discord bots can keep using `CrossfadeAudioSource` as an adapter for
 Discord voice playback.
 
+## Discord Bot Integration
+
+Keep your bot commands, queue state, and permissions in your Discord project.
+Use Veloura as the audio transition layer:
+
+```python
+from veloura.audio import CrossfadeAudioSource, resolve_stream_track, transition_preset
+
+config = transition_preset("streamer")
+source = CrossfadeAudioSource(crossfade_seconds=config.base_crossfade_seconds)
+
+track = await resolve_stream_track(
+    "artist song official audio",
+    transition_config=config,
+)
+
+source.enqueue(track)
+voice_client.play(source)
+```
+
 ## Standalone Example
 
 The example player resolves local files or stream queries, prepares transition
@@ -159,3 +185,12 @@ Demo music sources:
 
 Both source pages list the license as CC0. Attribution is not required by CC0,
 but Veloura credits the sources so the demo has clear provenance.
+
+## Troubleshooting
+
+- Run `ffmpeg -version` if decoding, analysis, or playback fails.
+- Install `veloura-audio[stream]` when resolving YouTube URLs or search
+  queries through `yt-dlp`.
+- Install `veloura-audio[discord]` when using `CrossfadeAudioSource` directly
+  with Discord voice playback.
+- Run `python -m veloura presets` to confirm the CLI entry point is installed.

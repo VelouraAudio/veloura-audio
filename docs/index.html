@@ -21,6 +21,7 @@
         <a href="#api">API</a>
         <a href="#automix">AutoMix</a>
         <a href="#demo">Demo</a>
+        <a href="#troubleshooting">Troubleshoot</a>
         <a href="https://github.com/VelouraAudio/veloura-audio">GitHub</a>
       </nav>
     </header>
@@ -37,7 +38,7 @@
           </p>
           <div class="hero-actions" aria-label="Primary actions">
             <a class="button primary" href="#install">Install</a>
-            <a class="button secondary" href="#demo">Demo</a>
+            <a class="button secondary" href="#demo">Listen</a>
             <a class="button secondary" href="https://pypi.org/project/veloura-audio/">PyPI</a>
           </div>
         </div>
@@ -47,7 +48,7 @@
         <div class="feature-grid" aria-label="Core features">
           <article>
             <h2>Queue Playback</h2>
-            <p>Use <code>PCMQueuePlayer</code> for apps that need frame reads, snapshots, skips, and queue control outside Discord.</p>
+            <p>Use <code>PCMQueuePlayer</code> for frame reads, snapshots, skips, and queue control outside Discord.</p>
           </article>
           <article>
             <h2>Smart Transitions</h2>
@@ -55,7 +56,7 @@
           </article>
           <article>
             <h2>AutoMix Planning</h2>
-            <p>Plan adjacent-track transitions with beat confidence, conservative tempo nudging, and safe fallback behavior.</p>
+            <p>Plan adjacent-track transitions with beat confidence, conservative tempo nudging, and fallback behavior.</p>
           </article>
         </div>
       </section>
@@ -69,10 +70,23 @@
             support when your product needs it.
           </p>
         </div>
-        <div class="command-list">
-          <pre><code>pip install veloura-audio</code></pre>
-          <pre><code>pip install "veloura-audio[stream]"</code></pre>
-          <pre><code>pip install "veloura-audio[discord]"</code></pre>
+        <div class="command-list" aria-label="Install commands">
+          <div class="command-row">
+            <pre><code>pip install veloura-audio</code></pre>
+            <button class="copy-command" type="button" data-copy="pip install veloura-audio">Copy</button>
+          </div>
+          <div class="command-row">
+            <pre><code>pip install "veloura-audio[stream]"</code></pre>
+            <button class="copy-command" type="button" data-copy='pip install "veloura-audio[stream]"'>Copy</button>
+          </div>
+          <div class="command-row">
+            <pre><code>pip install "veloura-audio[discord]"</code></pre>
+            <button class="copy-command" type="button" data-copy='pip install "veloura-audio[discord]"'>Copy</button>
+          </div>
+          <div class="command-row">
+            <pre><code>python -c "import veloura; print(veloura.__version__)"</code></pre>
+            <button class="copy-command" type="button" data-copy='python -c "import veloura; print(veloura.__version__)"'>Copy</button>
+          </div>
         </div>
       </section>
 
@@ -81,9 +95,8 @@
           <p class="section-label">Player API</p>
           <h2>Build playback without inheriting a Discord bot shape.</h2>
           <p>
-            The player facade keeps app code clear: enqueue prepared tracks, read PCM
-            frames, inspect snapshots, and prepare the next transition when both tracks
-            are known.
+            Enqueue prepared tracks, read PCM frames, inspect snapshots, and prepare
+            the next transition when both tracks are known.
           </p>
         </div>
         <pre class="code-panel"><code>from veloura.audio import AudioTrack, PCMQueuePlayer, transition_preset
@@ -106,15 +119,35 @@ snapshot = player.snapshot().to_dict()</code></pre>
       </section>
 
       <section id="automix" class="section split reverse">
-        <pre class="code-panel"><code>from veloura.audio import prepare_automix_transition_pair
-
-plan = prepare_automix_transition_pair(
-    current_track,
-    next_track,
-    transition_preset("automix"),
-)
-
-session.source.enqueue(next_track)</code></pre>
+        <div class="preset-panel" aria-label="Transition preset explorer">
+          <div class="preset-tabs" role="tablist" aria-label="Veloura presets">
+            <button class="preset-tab active" type="button" data-preset="streamer">Streamer</button>
+            <button class="preset-tab" type="button" data-preset="automix">AutoMix</button>
+            <button class="preset-tab" type="button" data-preset="broadcast">Broadcast</button>
+            <button class="preset-tab" type="button" data-preset="low-latency">Low latency</button>
+          </div>
+          <div class="preset-readout">
+            <p class="preset-kicker">Selected preset</p>
+            <h3 id="preset-name">Streamer</h3>
+            <p id="preset-description">
+              Balanced transitions for livestreams, Discord queues, and background music.
+            </p>
+            <dl class="preset-stats">
+              <div>
+                <dt>Crossfade</dt>
+                <dd id="preset-crossfade">8s</dd>
+              </div>
+              <div>
+                <dt>Analysis</dt>
+                <dd id="preset-analysis">Balanced</dd>
+              </div>
+              <div>
+                <dt>Best for</dt>
+                <dd id="preset-fit">General queues</dd>
+              </div>
+            </dl>
+          </div>
+        </div>
         <div>
           <p class="section-label">AutoMix</p>
           <h2>Pair-aware transitions with conservative fallbacks.</h2>
@@ -131,20 +164,41 @@ session.source.enqueue(next_track)</code></pre>
           <p class="section-label">Audio Demo</p>
           <h2>Listen to a rendered ending transition.</h2>
           <p>
-            This clip uses two CC0 music excerpts and was rendered with Veloura's
-            <code>PCMQueuePlayer</code>. It is bundled as a small listenable example
-            of the crossfade engine.
+            A short demo showing Veloura blending one CC0 music track into another.
+            The clip was rendered with <code>PCMQueuePlayer</code> and bundled as a
+            listenable example of the crossfade engine.
           </p>
+        </div>
+        <div class="demo-console">
           <div class="audio-demo">
             <div>
               <h3>Veloura CC0 Music Transition</h3>
-              <p>Two public-domain-style music excerpts blended with an equal-power ending transition.</p>
+              <p>Two CC0 music excerpts blended with an equal-power ending transition.</p>
             </div>
-            <audio controls preload="metadata" src="./assets/veloura-transition-demo.wav">
+            <audio id="demo-audio" controls preload="metadata" src="./assets/veloura-transition-demo.wav">
               Your browser does not support the audio element.
             </audio>
           </div>
+          <div class="demo-meter" aria-hidden="true">
+            <span></span><span></span><span></span><span></span><span></span>
+            <span></span><span></span><span></span><span></span><span></span>
+            <span></span><span></span><span></span><span></span><span></span>
+            <span></span>
+          </div>
+          <div class="transition-timeline" aria-label="Transition timeline">
+            <div class="timeline-track timeline-a">
+              <span>Track A</span>
+            </div>
+            <div class="timeline-track timeline-x">
+              <span>Crossfade</span>
+            </div>
+            <div class="timeline-track timeline-b">
+              <span>Track B</span>
+            </div>
+            <div class="timeline-playhead" aria-hidden="true"></div>
+          </div>
         </div>
+
         <div class="demo-header source-header">
           <p class="section-label">Demo Sources</p>
           <h2>CC0 music sources, credited clearly.</h2>
@@ -173,6 +227,48 @@ session.source.enqueue(next_track)</code></pre>
         <pre class="code-panel demo-command"><code>python examples/generate_transition_demo_audio.py</code></pre>
       </section>
 
+      <section id="discord" class="section split">
+        <div>
+          <p class="section-label">Discord Example</p>
+          <h2>Use Veloura as the transition engine behind your bot.</h2>
+          <p>
+            Discord bots can keep their own commands and queues while Veloura handles
+            stream resolution, transition prep, and the voice audio source.
+          </p>
+        </div>
+        <pre class="code-panel"><code>from veloura.audio import CrossfadeAudioSource, resolve_stream_track, transition_preset
+
+config = transition_preset("streamer")
+source = CrossfadeAudioSource(crossfade_seconds=config.base_crossfade_seconds)
+
+track = await resolve_stream_track(
+    "artist song official audio",
+    transition_config=config,
+)
+
+source.enqueue(track)
+voice_client.play(source)</code></pre>
+      </section>
+
+      <section id="troubleshooting" class="section use-cases">
+        <p class="section-label">Troubleshooting</p>
+        <h2>Fast checks when audio setup gets weird.</h2>
+        <div class="use-case-grid">
+          <article>
+            <h3>FFmpeg</h3>
+            <p>Run <code>ffmpeg -version</code>. Veloura needs FFmpeg for decoding, analysis, and stream playback.</p>
+          </article>
+          <article>
+            <h3>Streams</h3>
+            <p>Install <code>veloura-audio[stream]</code> when resolving YouTube URLs or search queries through <code>yt-dlp</code>.</p>
+          </article>
+          <article>
+            <h3>Discord Voice</h3>
+            <p>Install <code>veloura-audio[discord]</code> so <code>discord.py</code> and <code>PyNaCl</code> are available.</p>
+          </article>
+        </div>
+      </section>
+
       <section class="section use-cases">
         <p class="section-label">Use Cases</p>
         <h2>One engine, several product surfaces.</h2>
@@ -197,6 +293,7 @@ session.source.enqueue(next_track)</code></pre>
       <span>MIT licensed.</span>
       <a href="https://github.com/VelouraAudio/veloura-audio">GitHub</a>
       <a href="https://pypi.org/project/veloura-audio/">PyPI</a>
+      <a href="#top">Back to top</a>
     </footer>
 
     <script src="./site.js"></script>
