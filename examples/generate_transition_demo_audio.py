@@ -29,7 +29,7 @@ FRAME_DURATION = 0.02
 CLIP_SECONDS = 9.0
 CROSSFADE_SECONDS = 4.0
 OUTPUT_SECONDS_LIMIT = 16.0
-USER_AGENT = "veloura-audio-demo/0.5.2"
+USER_AGENT = "veloura-audio-demo/0.5.3"
 
 
 @dataclass(frozen=True)
