@@ -3,10 +3,10 @@
 from __future__ import annotations
 
 import re
-import shutil
 import subprocess
 from dataclasses import dataclass, replace
 
+from .ffmpeg_binary import resolve_ffmpeg
 from .models import MixerTrack
 
 SILENCE_START_RE = re.compile(r"silence_start:\s*([0-9.]+)")
@@ -128,7 +128,7 @@ def analyze_silence(track: MixerTrack, config: SmartTransitionConfig) -> Silence
     config = normalize_transition_config(config)
     if not config.enabled or not config.analyze_silence:
         return SilenceProfile()
-    ffmpeg = shutil.which("ffmpeg")
+    ffmpeg = resolve_ffmpeg()
     if not ffmpeg:
         return SilenceProfile()
 
@@ -148,7 +148,7 @@ def analyze_loudness(track: MixerTrack, config: SmartTransitionConfig) -> Loudne
     config = normalize_transition_config(config)
     if not config.enabled or not config.normalize_loudness:
         return LoudnessProfile()
-    ffmpeg = shutil.which("ffmpeg")
+    ffmpeg = resolve_ffmpeg()
     if not ffmpeg:
         return LoudnessProfile()
 

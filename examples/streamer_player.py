@@ -14,7 +14,6 @@ from __future__ import annotations
 
 import argparse
 import asyncio
-import shutil
 import subprocess
 import sys
 from pathlib import Path
@@ -33,10 +32,11 @@ from veloura.audio import (
     resolve_stream_track,
     transition_preset,
 )
+from veloura.audio.ffmpeg_binary import resolve_ffplay, resolve_ffprobe
 
 
 def probe_duration(source: str) -> float:
-    ffprobe = shutil.which("ffprobe")
+    ffprobe = resolve_ffprobe()
     if not ffprobe:
         return 0.0
     result = subprocess.run(
@@ -85,9 +85,9 @@ async def build_tracks(
 
 
 def open_ffplay() -> subprocess.Popen:
-    ffplay = shutil.which("ffplay")
+    ffplay = resolve_ffplay()
     if not ffplay:
-        raise RuntimeError("ffplay was not found. Install FFmpeg with ffplay to run this example.")
+        raise RuntimeError("ffplay was not found. Install system FFmpeg with ffplay to run this example.")
     return subprocess.Popen(
         [
             ffplay,

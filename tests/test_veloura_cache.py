@@ -1,5 +1,4 @@
 import math
-import shutil
 import struct
 import tempfile
 import unittest
@@ -7,6 +6,7 @@ import wave
 from pathlib import Path
 
 from veloura.audio import AudioTrack, FileAnalysisCache, SmartTransitionConfig, prepare_smart_transition
+from veloura.audio.ffmpeg_binary import resolve_ffmpeg
 
 
 def write_sine_with_silence(path: Path, *, sample_rate: int = 16_000):
@@ -61,7 +61,7 @@ class FileAnalysisCacheTests(unittest.TestCase):
             self.assertFalse(long.analysis.get("cached", False))
 
 
-@unittest.skipUnless(shutil.which("ffmpeg"), "ffmpeg is required for generated audio analysis")
+@unittest.skipUnless(resolve_ffmpeg(), "ffmpeg is required for generated audio analysis")
 class GeneratedAudioAnalysisTests(unittest.TestCase):
     def test_generated_wav_detects_silence_and_loudness(self):
         with tempfile.TemporaryDirectory() as temp_dir:

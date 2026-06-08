@@ -16,6 +16,9 @@ from .audio import (
     plan_beat_transition,
     preset_names,
     prepare_smart_transition,
+    resolve_ffmpeg,
+    resolve_ffplay,
+    resolve_ffprobe,
     resolve_stream_track,
     transition_preset,
 )
@@ -131,6 +134,33 @@ def list_presets(_: argparse.Namespace) -> int:
     return 0
 
 
+def doctor(_: argparse.Namespace) -> int:
+    ffmpeg = resolve_ffmpeg()
+    info = {
+        "ffmpeg": ffmpeg,
+        "ffprobe": resolve_ffprobe(),
+        "ffplay": resolve_ffplay(),
+        "stream_extra": False,
+        "discord_extra": False,
+    }
+    try:
+        import yt_dlp  # noqa: F401
+
+        info["stream_extra"] = True
+    except Exception:
+        pass
+    try:
+        import discord  # noqa: F401
+        import nacl  # noqa: F401
+
+        info["discord_extra"] = True
+    except Exception:
+        pass
+
+    print(json.dumps(info, indent=2))
+    return 0 if ffmpeg else 1
+
+
 def build_parser() -> argparse.ArgumentParser:
     parser = argparse.ArgumentParser(
         prog="veloura",
@@ -140,6 +170,9 @@ def build_parser() -> argparse.ArgumentParser:
 
     presets = subparsers.add_parser("presets", help="List built-in transition presets.")
     presets.set_defaults(func=list_presets)
+
+    doctor_parser = subparsers.add_parser("doctor", help="Check FFmpeg and optional integration availability.")
+    doctor_parser.set_defaults(func=doctor)
 
     resolve = subparsers.add_parser("resolve", help="Resolve a query or URL into a playable track.")
     resolve.add_argument("query")

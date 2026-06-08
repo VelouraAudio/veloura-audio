@@ -39,6 +39,7 @@ from .cache import (
 )
 from .crossfade import CrossfadeAudioSource
 from .ffmpeg_stream import FFmpegPCMStream
+from .ffmpeg_binary import require_ffmpeg, resolve_ffmpeg, resolve_ffplay, resolve_ffprobe
 from .models import AudioTrack, MixerTrack
 from .pcm import pcm_add, pcm_mul, pcm_rms
 from .player import PCMQueuePlayer, QueueSnapshot
@@ -93,6 +94,10 @@ __all__ = [
     "default_cache_dir",
     "CrossfadeAudioSource",
     "FFmpegPCMStream",
+    "require_ffmpeg",
+    "resolve_ffmpeg",
+    "resolve_ffplay",
+    "resolve_ffprobe",
     "AudioTrack",
     "MixerTrack",
     "pcm_add",

@@ -13,6 +13,7 @@ from veloura.audio import (
     planned_crossfade_seconds,
     prepare_smart_transition,
 )
+from veloura.audio.ffmpeg_binary import resolve_ffmpeg, require_ffmpeg
 from veloura.audio.ffmpeg_stream import atempo_filter_chain, build_ffmpeg_pcm_command, should_use_reconnect
 
 
@@ -164,6 +165,10 @@ class CrossfadeSessionTests(unittest.TestCase):
         self.assertTrue(should_use_reconnect(remote.stream_url))
         self.assertNotIn("-reconnect", build_ffmpeg_pcm_command("ffmpeg", local))
         self.assertIn("-reconnect", build_ffmpeg_pcm_command("ffmpeg", remote))
+
+    def test_ffmpeg_resolver_finds_runtime_binary(self):
+        self.assertTrue(resolve_ffmpeg())
+        self.assertEqual(require_ffmpeg(), resolve_ffmpeg())
 
     def test_smart_transition_adapts_short_tracks(self):
         config = SmartTransitionConfig(

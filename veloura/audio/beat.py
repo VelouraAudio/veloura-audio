@@ -4,11 +4,11 @@ from __future__ import annotations
 
 import argparse
 import json
-import shutil
 import subprocess
 from dataclasses import asdict, dataclass
 from typing import Any
 
+from .ffmpeg_binary import require_ffmpeg
 from .pcm import pcm_rms
 
 DEFAULT_SAMPLE_RATE = 11_025
@@ -49,10 +49,7 @@ def decode_pcm_window(
     sample_rate: int = DEFAULT_SAMPLE_RATE,
     timeout: float = 12.0,
 ) -> bytes:
-    ffmpeg = shutil.which("ffmpeg")
-    if not ffmpeg:
-        raise RuntimeError("ffmpeg was not found on this machine.")
-
+    ffmpeg = require_ffmpeg()
     command = [
         ffmpeg,
         "-hide_banner",

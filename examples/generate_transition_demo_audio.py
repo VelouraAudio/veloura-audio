@@ -21,6 +21,7 @@ if str(PROJECT_ROOT) not in sys.path:
     sys.path.insert(0, str(PROJECT_ROOT))
 
 from veloura.audio import AudioTrack, FRAME_RATE, PCMQueuePlayer
+from veloura.audio.ffmpeg_binary import require_ffmpeg
 
 CHANNELS = 2
 SAMPLE_WIDTH = 2
@@ -145,9 +146,7 @@ def clip_to_wav(ffmpeg: str, source: Path, output: Path, start_seconds: float) -
 
 
 def prepare_sources(temp_dir: Path) -> tuple[Path, Path]:
-    ffmpeg = shutil.which("ffmpeg")
-    if not ffmpeg:
-        raise RuntimeError("ffmpeg was not found on this machine.")
+    ffmpeg = require_ffmpeg()
 
     clips: list[Path] = []
     for index, source in enumerate(SOURCES, start=1):

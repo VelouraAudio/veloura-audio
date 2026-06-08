@@ -66,8 +66,9 @@
           <p class="section-label">Install</p>
           <h2>Small core, optional integrations.</h2>
           <p>
-            Install only the engine by default. Add stream resolution or Discord voice
-            support when your product needs it.
+            The base install includes a bundled FFmpeg provider for decoding and
+            analysis. Add stream resolution or Discord voice support when your
+            product needs it.
           </p>
         </div>
         <div class="command-list" aria-label="Install commands">
@@ -86,6 +87,10 @@
           <div class="command-row">
             <pre><code>python -c "import veloura; print(veloura.__version__)"</code></pre>
             <button class="copy-command" type="button" data-copy='python -c "import veloura; print(veloura.__version__)"'>Copy</button>
+          </div>
+          <div class="command-row">
+            <pre><code>python -m veloura doctor</code></pre>
+            <button class="copy-command" type="button" data-copy="python -m veloura doctor">Copy</button>
           </div>
         </div>
       </section>
@@ -256,7 +261,7 @@ voice_client.play(source)</code></pre>
         <div class="use-case-grid">
           <article>
             <h3>FFmpeg</h3>
-            <p>Run <code>ffmpeg -version</code>. Veloura needs FFmpeg for decoding, analysis, and stream playback.</p>
+            <p>Run <code>python -m veloura doctor</code>. Veloura uses bundled FFmpeg when system FFmpeg is missing.</p>
           </article>
           <article>
             <h3>Streams</h3>

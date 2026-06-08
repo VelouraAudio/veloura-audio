@@ -27,7 +27,9 @@ classifiers = [
     "Topic :: Multimedia :: Sound/Audio :: Mixers",
     "Topic :: Software Development :: Libraries :: Python Modules",
 ]
-dependencies = []
+dependencies = [
+    "imageio-ffmpeg>=0.6.0",
+]
 
 [project.scripts]
 veloura = "veloura.cli:main"

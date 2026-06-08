@@ -2,11 +2,11 @@
 
 import os
 import select
-import shutil
 import subprocess
 from urllib.parse import urlparse
 
 from .constants import CHANNELS, FRAME_BYTES, FRAME_RATE
+from .ffmpeg_binary import require_ffmpeg
 from .models import MixerTrack
 
 READ_TIMEOUT_SECONDS = 0.25
@@ -86,11 +86,7 @@ def build_ffmpeg_pcm_command(ffmpeg: str, track: MixerTrack) -> list[str]:
 
 class FFmpegPCMStream:
     def __init__(self, track: MixerTrack):
-        ffmpeg = shutil.which("ffmpeg")
-        if not ffmpeg:
-            raise RuntimeError("ffmpeg was not found on this machine.")
-
-        command = build_ffmpeg_pcm_command(ffmpeg, track)
+        command = build_ffmpeg_pcm_command(require_ffmpeg(), track)
         self.process = subprocess.Popen(
             command,
             stdin=subprocess.DEVNULL,

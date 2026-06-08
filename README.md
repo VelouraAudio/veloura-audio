@@ -22,8 +22,9 @@ your project to one bot implementation.
 ## Requirements
 
 - Python 3.12 or newer
-- FFmpeg for decoding, playback, silence analysis, loudness analysis, and beat
-  analysis
+- Veloura installs `imageio-ffmpeg` by default and uses its bundled FFmpeg
+  executable when system `ffmpeg` is not available
+- System `ffplay` is only needed for the standalone local player example
 - `yt-dlp` only when resolving online stream/search inputs
 - `discord.py` and `PyNaCl` only when using the Discord audio source directly
 
@@ -57,6 +58,7 @@ Verify the installed package:
 
 ```bash
 python -c "import veloura; print(veloura.__version__)"
+python -m veloura doctor
 ```
 
 ## Quick Start
@@ -104,6 +106,7 @@ Veloura exposes the same core tools through `python -m veloura` or the
 
 ```bash
 python -m veloura presets
+python -m veloura doctor
 python -m veloura prepare ./song.mp3 --preset streamer
 python -m veloura analyze ./song.mp3
 python -m veloura plan ./current.mp3 ./next.mp3 --preset broadcast
@@ -162,7 +165,8 @@ voice_client.play(source)
 ## Standalone Example
 
 The example player resolves local files or stream queries, prepares transition
-analysis, mixes the queue, and pipes PCM into `ffplay`:
+analysis, mixes the queue, and pipes PCM into `ffplay`. This example needs a
+system FFmpeg install with `ffplay` available:
 
 ```bash
 python examples/streamer_player.py ./song-a.mp3 ./song-b.mp3 --preset streamer
@@ -188,7 +192,10 @@ but Veloura credits the sources so the demo has clear provenance.
 
 ## Troubleshooting
 
-- Run `ffmpeg -version` if decoding, analysis, or playback fails.
+- Run `python -m veloura doctor` to verify FFmpeg and optional integrations.
+- Set `VELOURA_FFMPEG=/path/to/ffmpeg` if you want Veloura to use a specific
+  FFmpeg executable instead of the bundled provider.
+- Install system FFmpeg if you want to use the standalone `ffplay` example.
 - Install `veloura-audio[stream]` when resolving YouTube URLs or search
   queries through `yt-dlp`.
 - Install `veloura-audio[discord]` when using `CrossfadeAudioSource` directly
