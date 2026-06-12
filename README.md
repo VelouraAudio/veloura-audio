@@ -206,6 +206,25 @@ source.enqueue(track)
 voice_client.play(source)
 ```
 
+### Slash Command Example
+
+Veloura includes a minimal Discord slash-command bot at
+`examples/discord_slash_bot.py`. It provides `/play`, `/queue`, `/now`, `/skip`,
+`/stop`, and `/volume`.
+
+```bash
+pip install "veloura-audio[all]"
+export DISCORD_TOKEN="your-bot-token"
+export DISCORD_GUILD_ID="your-test-server-id"
+python examples/discord_slash_bot.py
+```
+
+`DISCORD_GUILD_ID` is optional, but recommended for development because server
+slash-command sync is much faster than global sync.
+
+When inviting the bot, enable the `bot` and `applications.commands` scopes and
+grant Connect/Speak voice permissions.
+
 ## Standalone Example
 
 The example player resolves local files or stream queries, prepares transition

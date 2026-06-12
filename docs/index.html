@@ -281,24 +281,22 @@ snapshot = player.snapshot().to_dict()</code></pre>
       <section id="discord" class="section split">
         <div>
           <p class="section-label">Discord Example</p>
-          <h2>Use Veloura as the transition engine behind your bot.</h2>
+          <h2>Run the slash-command example bot.</h2>
           <p>
-            Discord bots can keep their own commands and queues while Veloura handles
-            stream resolution, transition prep, and the voice audio source.
+            The reference bot in <code>examples/discord_slash_bot.py</code> uses
+            Veloura for stream resolution, transition prep, and Discord voice
+            playback. It includes <code>/play</code>, <code>/queue</code>,
+            <code>/now</code>, <code>/skip</code>, <code>/stop</code>, and
+            <code>/volume</code>.
+            Invite it with the <code>bot</code> and
+            <code>applications.commands</code> scopes, plus Connect/Speak voice
+            permissions.
           </p>
         </div>
-        <pre class="code-panel"><code>from veloura.audio import CrossfadeAudioSource, resolve_stream_track, transition_preset
-
-config = transition_preset("streamer")
-source = CrossfadeAudioSource(crossfade_seconds=config.base_crossfade_seconds)
-
-track = await resolve_stream_track(
-    "artist song official audio",
-    transition_config=config,
-)
-
-source.enqueue(track)
-voice_client.play(source)</code></pre>
+        <pre class="code-panel"><code>pip install "veloura-audio[all]"
+export DISCORD_TOKEN="your-bot-token"
+export DISCORD_GUILD_ID="your-test-server-id"
+python examples/discord_slash_bot.py</code></pre>
       </section>
 
       <section id="lossless" class="section split reverse">
