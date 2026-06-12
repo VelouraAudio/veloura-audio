@@ -20,7 +20,13 @@ PROJECT_ROOT = Path(__file__).resolve().parents[1]
 if str(PROJECT_ROOT) not in sys.path:
     sys.path.insert(0, str(PROJECT_ROOT))
 
-from veloura.audio import AudioTrack, FRAME_RATE, PCMQueuePlayer
+from veloura.audio import (
+    AudioTrack,
+    FRAME_RATE,
+    LosslessTransitionConfig,
+    PCMQueuePlayer,
+    render_lossless_transition,
+)
 from veloura.audio.ffmpeg_binary import require_ffmpeg
 
 CHANNELS = 2
@@ -29,7 +35,10 @@ FRAME_DURATION = 0.02
 CLIP_SECONDS = 9.0
 CROSSFADE_SECONDS = 4.0
 OUTPUT_SECONDS_LIMIT = 16.0
-USER_AGENT = "veloura-audio-demo/0.5.3"
+USER_AGENT = "veloura-audio-demo/0.6.0"
+DEFAULT_QUEUE_OUTPUT = PROJECT_ROOT / "docs" / "assets" / "veloura-transition-demo.wav"
+DEFAULT_LOSSLESS_OUTPUT = PROJECT_ROOT / "docs" / "assets" / "veloura-lossless-transition-demo.wav"
+DEFAULT_LOSSLESS_FLAC_OUTPUT = PROJECT_ROOT / "docs" / "assets" / "veloura-lossless-transition-demo.flac"
 
 
 @dataclass(frozen=True)
@@ -160,45 +169,78 @@ def prepare_sources(temp_dir: Path) -> tuple[Path, Path]:
     return clips[0], clips[1]
 
 
-def render_transition(output: Path) -> None:
+def make_tracks(first: Path, second: Path) -> tuple[AudioTrack, AudioTrack]:
+    current = AudioTrack.from_source(
+        str(first),
+        title=f"{SOURCES[0].title} excerpt",
+        webpage=SOURCES[0].page_url,
+        duration=CLIP_SECONDS,
+        license="CC0",
+        artist=SOURCES[0].author,
+    )
+    next_track = AudioTrack.from_source(
+        str(second),
+        title=f"{SOURCES[1].title} excerpt",
+        webpage=SOURCES[1].page_url,
+        duration=CLIP_SECONDS,
+        license="CC0",
+        artist=SOURCES[1].author,
+    )
+    current.crossfade_seconds = CROSSFADE_SECONDS
+    return current, next_track
+
+
+def render_queue_transition(first: Path, second: Path, output: Path) -> None:
     output.parent.mkdir(parents=True, exist_ok=True)
+    current, next_track = make_tracks(first, second)
+
+    player = PCMQueuePlayer(volume=0.80, crossfade_seconds=CROSSFADE_SECONDS)
+    player.enqueue(current)
+    player.enqueue(next_track)
+
+    max_frames = int(OUTPUT_SECONDS_LIMIT / FRAME_DURATION)
+    with wave.open(str(output), "wb") as handle:
+        handle.setnchannels(CHANNELS)
+        handle.setsampwidth(SAMPLE_WIDTH)
+        handle.setframerate(FRAME_RATE)
+        for _ in range(max_frames):
+            frame = player.read_frame()
+            if not frame:
+                break
+            handle.writeframesraw(frame)
+    player.stop()
+
+
+def render_lossless_demo(first: Path, second: Path, output: Path) -> None:
+    output.parent.mkdir(parents=True, exist_ok=True)
+    current, next_track = make_tracks(first, second)
+    render_lossless_transition(
+        current,
+        next_track,
+        output,
+        LosslessTransitionConfig(
+            crossfade_seconds=CROSSFADE_SECONDS,
+            sample_rate=FRAME_RATE,
+            channels=CHANNELS,
+            curve="qsin",
+        ),
+        timeout=60,
+    )
+
+
+def render_transition(
+    output: Path,
+    lossless_output: Path | None = DEFAULT_LOSSLESS_OUTPUT,
+    lossless_flac_output: Path | None = DEFAULT_LOSSLESS_FLAC_OUTPUT,
+) -> None:
     with tempfile.TemporaryDirectory() as temp_dir_name:
         temp_dir = Path(temp_dir_name)
         first, second = prepare_sources(temp_dir)
-
-        current = AudioTrack.from_source(
-            str(first),
-            title=f"{SOURCES[0].title} excerpt",
-            webpage=SOURCES[0].page_url,
-            duration=CLIP_SECONDS,
-            license="CC0",
-            artist=SOURCES[0].author,
-        )
-        next_track = AudioTrack.from_source(
-            str(second),
-            title=f"{SOURCES[1].title} excerpt",
-            webpage=SOURCES[1].page_url,
-            duration=CLIP_SECONDS,
-            license="CC0",
-            artist=SOURCES[1].author,
-        )
-        current.crossfade_seconds = CROSSFADE_SECONDS
-
-        player = PCMQueuePlayer(volume=0.80, crossfade_seconds=CROSSFADE_SECONDS)
-        player.enqueue(current)
-        player.enqueue(next_track)
-
-        max_frames = int(OUTPUT_SECONDS_LIMIT / FRAME_DURATION)
-        with wave.open(str(output), "wb") as handle:
-            handle.setnchannels(CHANNELS)
-            handle.setsampwidth(SAMPLE_WIDTH)
-            handle.setframerate(FRAME_RATE)
-            for _ in range(max_frames):
-                frame = player.read_frame()
-                if not frame:
-                    break
-                handle.writeframesraw(frame)
-        player.stop()
+        render_queue_transition(first, second, output)
+        if lossless_output is not None:
+            render_lossless_demo(first, second, lossless_output)
+        if lossless_flac_output is not None:
+            render_lossless_demo(first, second, lossless_flac_output)
 
 
 def main(argv: list[str] | None = None) -> int:
@@ -207,8 +249,25 @@ def main(argv: list[str] | None = None) -> int:
         "output",
         nargs="?",
         type=Path,
-        default=PROJECT_ROOT / "docs" / "assets" / "veloura-transition-demo.wav",
-        help="Output WAV path.",
+        default=DEFAULT_QUEUE_OUTPUT,
+        help="Output WAV path for the queue-player demo.",
+    )
+    parser.add_argument(
+        "--lossless-output",
+        type=Path,
+        default=DEFAULT_LOSSLESS_OUTPUT,
+        help="Output WAV path for the lossless-renderer demo.",
+    )
+    parser.add_argument(
+        "--lossless-flac-output",
+        type=Path,
+        default=DEFAULT_LOSSLESS_FLAC_OUTPUT,
+        help="Output FLAC path for the lossless-renderer demo.",
+    )
+    parser.add_argument(
+        "--skip-lossless",
+        action="store_true",
+        help="Only render the queue-player demo.",
     )
     parser.add_argument("--print-sources", action="store_true", help="Print source credits and exit.")
     args = parser.parse_args(argv)
@@ -218,8 +277,14 @@ def main(argv: list[str] | None = None) -> int:
             print(f"{source.title} by {source.author} - CC0 - {source.page_url}")
         return 0
 
-    render_transition(args.output)
+    lossless_output = None if args.skip_lossless else args.lossless_output
+    lossless_flac_output = None if args.skip_lossless else args.lossless_flac_output
+    render_transition(args.output, lossless_output, lossless_flac_output)
     print(args.output)
+    if lossless_output is not None:
+        print(lossless_output)
+    if lossless_flac_output is not None:
+        print(lossless_flac_output)
     return 0
 
 

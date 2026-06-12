@@ -21,6 +21,7 @@
         <a href="#api">API</a>
         <a href="#automix">AutoMix</a>
         <a href="#demo">Demo</a>
+        <a href="#lossless">Lossless</a>
         <a href="#troubleshooting">Troubleshoot</a>
         <a href="https://github.com/VelouraAudio/veloura-audio">GitHub</a>
       </nav>
@@ -55,8 +56,8 @@
             <p>Trim silence, normalize loudness, and adapt crossfade timing to track duration and analysis results.</p>
           </article>
           <article>
-            <h2>AutoMix Planning</h2>
-            <p>Plan adjacent-track transitions with beat confidence, conservative tempo nudging, and fallback behavior.</p>
+            <h2>Lossless Renders</h2>
+            <p>Render FLAC, WAV, ALAC, or AIFF transition files without lossy re-encoding.</p>
           </article>
         </div>
       </section>
@@ -171,7 +172,7 @@ snapshot = player.snapshot().to_dict()</code></pre>
           <p>
             A short demo showing Veloura blending one CC0 music track into another.
             The clip was rendered with <code>PCMQueuePlayer</code> and bundled as a
-            listenable example of the crossfade engine.
+            listenable example of real-time queue playback.
           </p>
         </div>
         <div class="demo-console">
@@ -253,6 +254,82 @@ track = await resolve_stream_track(
 
 source.enqueue(track)
 voice_client.play(source)</code></pre>
+      </section>
+
+      <section id="lossless" class="section split reverse">
+        <div class="lossless-console">
+          <div class="lossless-player">
+            <div>
+              <p class="section-label">Playable Demo</p>
+              <h3>Lossless transition render</h3>
+              <p>
+                The same CC0 excerpts rendered through <code>veloura render-transition</code>
+                into FLAC and WAV files with no lossy output encode step.
+              </p>
+            </div>
+            <audio id="lossless-audio" controls preload="metadata">
+              <source src="./assets/veloura-lossless-transition-demo.flac" type="audio/flac" />
+              <source src="./assets/veloura-lossless-transition-demo.wav" type="audio/wav" />
+              Your browser does not support the audio element.
+            </audio>
+            <div class="lossless-actions">
+              <a class="button secondary" href="./assets/veloura-lossless-transition-demo.flac" download>Download FLAC</a>
+              <a class="button secondary" href="./assets/veloura-lossless-transition-demo.wav" download>Download WAV</a>
+            </div>
+          </div>
+          <div class="demo-meter" aria-hidden="true">
+            <span></span><span></span><span></span><span></span><span></span>
+            <span></span><span></span><span></span><span></span><span></span>
+            <span></span><span></span><span></span><span></span><span></span>
+            <span></span>
+          </div>
+          <div class="transition-timeline" aria-label="Lossless transition timeline">
+            <div class="timeline-track timeline-a">
+              <span>CC0 Track A</span>
+            </div>
+            <div class="timeline-track timeline-x">
+              <span>Float Crossfade</span>
+            </div>
+            <div class="timeline-track timeline-b">
+              <span>CC0 Track B</span>
+            </div>
+            <div class="timeline-playhead" aria-hidden="true"></div>
+          </div>
+          <dl class="lossless-facts">
+            <div>
+              <dt>Output</dt>
+              <dd>FLAC + WAV</dd>
+            </div>
+            <div>
+              <dt>Rate</dt>
+              <dd>48 kHz stereo</dd>
+            </div>
+            <div>
+              <dt>Sources</dt>
+              <dd>CC0 music excerpts</dd>
+            </div>
+          </dl>
+        </div>
+        <div>
+          <p class="section-label">Lossless Rendering</p>
+          <h2>Render transitions without lossy re-encoding.</h2>
+          <p>
+            For local music apps, demos, and release-prep workflows, Veloura can
+            decode sources to high-precision float PCM, apply an equal-power-style
+            crossfade, and write FLAC, WAV, ALAC, or AIFF output.
+          </p>
+          <div class="command-row lossless-command">
+            <pre><code>python -m veloura render-transition \
+  ./track-a.flac \
+  ./track-b.flac \
+  ./transition.flac \
+  --crossfade 8</code></pre>
+            <button class="copy-command" type="button" data-copy="python -m veloura render-transition ./track-a.flac ./track-b.flac ./transition.flac --crossfade 8">Copy</button>
+          </div>
+          <p class="truth-note">
+            Lossless rendering means the transition output is written without MP3/AAC/Opus-style compression. The crossfade still creates a new waveform, so it is not bit-for-bit copying of the source files.
+          </p>
+        </div>
       </section>
 
       <section id="troubleshooting" class="section use-cases">

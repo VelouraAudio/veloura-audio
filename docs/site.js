@@ -1,8 +1,17 @@
 const canvas = document.getElementById("waveform");
 const context = canvas.getContext("2d");
-const demoAudio = document.getElementById("demo-audio");
-const meterBars = Array.from(document.querySelectorAll(".demo-meter span"));
-const playhead = document.querySelector(".timeline-playhead");
+const audioVisuals = [
+  {
+    audio: document.getElementById("demo-audio"),
+    bars: Array.from(document.querySelectorAll("#demo .demo-meter span")),
+    playhead: document.querySelector("#demo .timeline-playhead"),
+  },
+  {
+    audio: document.getElementById("lossless-audio"),
+    bars: Array.from(document.querySelectorAll("#lossless .demo-meter span")),
+    playhead: document.querySelector("#lossless .timeline-playhead"),
+  },
+];
 
 const presets = {
   streamer: {
@@ -89,20 +98,22 @@ function draw(time = 0) {
 }
 
 function updateMeter(time = 0) {
-  const active = demoAudio && !demoAudio.paused && !demoAudio.ended;
-  meterBars.forEach((bar, index) => {
-    const pulse = Math.sin(time * 0.006 + index * 0.9);
-    const drift = Math.sin(time * 0.002 + index * 0.35);
-    const height = active ? 18 + Math.abs(pulse) * 62 + Math.abs(drift) * 18 : 12 + (index % 4) * 6;
-    bar.style.height = `${height}px`;
-    bar.style.opacity = active ? "0.92" : "0.58";
-  });
+  audioVisuals.forEach(({ audio, bars, playhead }, visualIndex) => {
+    const active = audio && !audio.paused && !audio.ended;
+    bars.forEach((bar, index) => {
+      const pulse = Math.sin(time * 0.006 + index * 0.9 + visualIndex * 0.6);
+      const drift = Math.sin(time * 0.002 + index * 0.35 + visualIndex);
+      const height = active ? 18 + Math.abs(pulse) * 62 + Math.abs(drift) * 18 : 12 + (index % 4) * 6;
+      bar.style.height = `${height}px`;
+      bar.style.opacity = active ? "0.92" : "0.58";
+    });
 
-  if (demoAudio && playhead) {
-    const duration = Number.isFinite(demoAudio.duration) ? demoAudio.duration : 0;
-    const progress = duration > 0 ? demoAudio.currentTime / duration : 0;
-    playhead.style.left = `${Math.max(0, Math.min(1, progress)) * 100}%`;
-  }
+    if (audio && playhead) {
+      const duration = Number.isFinite(audio.duration) ? audio.duration : 0;
+      const progress = duration > 0 ? audio.currentTime / duration : 0;
+      playhead.style.left = `${Math.max(0, Math.min(1, progress)) * 100}%`;
+    }
+  });
 
   requestAnimationFrame(updateMeter);
 }

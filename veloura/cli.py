@@ -20,6 +20,8 @@ from .audio import (
     resolve_ffplay,
     resolve_ffprobe,
     resolve_stream_track,
+    LosslessTransitionConfig,
+    render_lossless_transition,
     transition_preset,
 )
 from .audio.beat import analyze_source, plan_to_dict
@@ -129,6 +131,25 @@ def prepare_track(args: argparse.Namespace) -> int:
     return 0
 
 
+def render_transition(args: argparse.Namespace) -> int:
+    output = render_lossless_transition(
+        args.current,
+        args.next,
+        args.output,
+        LosslessTransitionConfig(
+            crossfade_seconds=args.crossfade,
+            sample_rate=args.sample_rate,
+            channels=args.channels,
+            curve=args.curve,
+            limiter=not args.no_limiter,
+            overwrite=not args.no_overwrite,
+        ),
+        timeout=args.timeout,
+    )
+    print(output)
+    return 0
+
+
 def list_presets(_: argparse.Namespace) -> int:
     print("\n".join(preset_names()))
     return 0
@@ -211,6 +232,22 @@ def build_parser() -> argparse.ArgumentParser:
     plan.add_argument("--cache-dir")
     plan.add_argument("--no-cache", action="store_true")
     plan.set_defaults(func=lambda args: asyncio.run(plan_transition(args)))
+
+    render_parser = subparsers.add_parser(
+        "render-transition",
+        help="Render two sources into a lossless transition file.",
+    )
+    render_parser.add_argument("current")
+    render_parser.add_argument("next")
+    render_parser.add_argument("output")
+    render_parser.add_argument("--crossfade", type=float, default=8.0)
+    render_parser.add_argument("--sample-rate", type=int, default=48_000)
+    render_parser.add_argument("--channels", type=int, choices=(1, 2), default=2)
+    render_parser.add_argument("--curve", default="qsin")
+    render_parser.add_argument("--timeout", type=float)
+    render_parser.add_argument("--no-limiter", action="store_true")
+    render_parser.add_argument("--no-overwrite", action="store_true")
+    render_parser.set_defaults(func=render_transition)
 
     return parser
 

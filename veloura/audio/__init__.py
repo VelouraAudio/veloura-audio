@@ -40,6 +40,12 @@ from .cache import (
 from .crossfade import CrossfadeAudioSource
 from .ffmpeg_stream import FFmpegPCMStream
 from .ffmpeg_binary import require_ffmpeg, resolve_ffmpeg, resolve_ffplay, resolve_ffprobe
+from .lossless import (
+    LosslessTransitionConfig,
+    build_lossless_transition_command,
+    codec_args_for_output,
+    render_lossless_transition,
+)
 from .models import AudioTrack, MixerTrack
 from .pcm import pcm_add, pcm_mul, pcm_rms
 from .player import PCMQueuePlayer, QueueSnapshot
@@ -98,6 +104,10 @@ __all__ = [
     "resolve_ffmpeg",
     "resolve_ffplay",
     "resolve_ffprobe",
+    "LosslessTransitionConfig",
+    "build_lossless_transition_command",
+    "codec_args_for_output",
+    "render_lossless_transition",
     "AudioTrack",
     "MixerTrack",
     "pcm_add",

@@ -11,6 +11,7 @@ your project to one bot implementation.
 ## Features
 
 - Equal-power crossfade mixing for signed 16-bit PCM audio
+- Lossless-quality transition rendering to FLAC, WAV, ALAC, or AIFF
 - Discord-independent PCM queue player with snapshots and playback controls
 - Smart transition planning based on track duration, silence trim, and loudness
 - Beat/BPM analysis with beat-aware transition plans
@@ -110,6 +111,7 @@ python -m veloura doctor
 python -m veloura prepare ./song.mp3 --preset streamer
 python -m veloura analyze ./song.mp3
 python -m veloura plan ./current.mp3 ./next.mp3 --preset broadcast
+python -m veloura render-transition ./song-a.flac ./song-b.flac ./transition.flac
 ```
 
 For YouTube/search inputs, install `veloura-audio[stream]` and add `--resolve`:
@@ -142,6 +144,36 @@ Apps that manage playback through `PCMQueuePlayer` can call
 known. Discord bots can keep using `CrossfadeAudioSource` as an adapter for
 Discord voice playback.
 
+## Lossless Transition Rendering
+
+For local renderers, music apps, and release-prep workflows, Veloura can render
+two sources into a lossless transition file:
+
+```bash
+python -m veloura render-transition ./track-a.flac ./track-b.flac ./transition.flac --crossfade 8
+```
+
+Supported output extensions are `.flac`, `.wav`, `.m4a`, `.alac`, `.aif`, and
+`.aiff`. The renderer decodes inputs to high-precision float PCM inside FFmpeg,
+uses an equal-power-style crossfade curve, and writes a lossless output codec.
+
+Programmatic use:
+
+```python
+from veloura.audio import LosslessTransitionConfig, render_lossless_transition
+
+render_lossless_transition(
+    "track-a.flac",
+    "track-b.flac",
+    "transition.flac",
+    LosslessTransitionConfig(crossfade_seconds=8),
+)
+```
+
+This is lossless-quality transition processing, not bit-perfect copying, because
+crossfading intentionally changes the waveform. Discord voice output is still
+encoded by Discord.
+
 ## Discord Bot Integration
 
 Keep your bot commands, queue state, and permissions in your Discord project.
@@ -173,10 +205,12 @@ python examples/streamer_player.py ./song-a.mp3 ./song-b.mp3 --preset streamer
 python examples/streamer_player.py ./song-a.mp3 ./song-b.mp3 --cache-dir ./veloura-cache
 ```
 
-## Free Transition Demo
+## Free Transition Demos
 
-The website includes a small transition clip rendered from CC0 music sources
-with `PCMQueuePlayer`. Regenerate it with:
+The website includes small playable transition clips rendered from CC0 music
+sources. One demo is rendered through `PCMQueuePlayer`; the lossless demo is
+rendered through `python -m veloura render-transition` into FLAC and WAV output.
+Regenerate them with:
 
 ```bash
 python examples/generate_transition_demo_audio.py

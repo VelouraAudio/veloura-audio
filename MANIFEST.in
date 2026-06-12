@@ -2,5 +2,6 @@ include README.md
 include LICENSE
 recursive-include docs *.css *.html *.js *.md
 recursive-include docs/assets *.wav
+recursive-include docs/assets *.flac
 recursive-include examples *.py
 recursive-include tests *.py
