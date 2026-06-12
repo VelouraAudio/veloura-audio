@@ -5,6 +5,7 @@ from __future__ import annotations
 import argparse
 import asyncio
 import json
+import subprocess
 import sys
 from typing import Any
 
@@ -155,12 +156,35 @@ def list_presets(_: argparse.Namespace) -> int:
     return 0
 
 
+def executable_works(path: str | None) -> bool:
+    if not path:
+        return False
+    try:
+        result = subprocess.run(
+            [path, "-version"],
+            stdin=subprocess.DEVNULL,
+            stdout=subprocess.DEVNULL,
+            stderr=subprocess.DEVNULL,
+            timeout=5,
+            check=False,
+        )
+    except Exception:
+        return False
+    return result.returncode == 0
+
+
 def doctor(_: argparse.Namespace) -> int:
     ffmpeg = resolve_ffmpeg()
+    ffprobe = resolve_ffprobe()
+    ffplay = resolve_ffplay()
+    ffmpeg_usable = executable_works(ffmpeg)
     info = {
         "ffmpeg": ffmpeg,
-        "ffprobe": resolve_ffprobe(),
-        "ffplay": resolve_ffplay(),
+        "ffmpeg_usable": ffmpeg_usable,
+        "ffprobe": ffprobe,
+        "ffprobe_usable": executable_works(ffprobe),
+        "ffplay": ffplay,
+        "ffplay_usable": executable_works(ffplay),
         "stream_extra": False,
         "discord_extra": False,
     }
@@ -179,7 +203,7 @@ def doctor(_: argparse.Namespace) -> int:
         pass
 
     print(json.dumps(info, indent=2))
-    return 0 if ffmpeg else 1
+    return 0 if ffmpeg_usable else 1
 
 
 def build_parser() -> argparse.ArgumentParser:
@@ -257,6 +281,6 @@ def main(argv: list[str] | None = None) -> int:
     args = parser.parse_args(argv)
     try:
         return int(args.func(args) or 0)
-    except RuntimeError as exc:
+    except (RuntimeError, ValueError, OSError, subprocess.SubprocessError) as exc:
         print(f"veloura: {exc}", file=sys.stderr)
         return 1

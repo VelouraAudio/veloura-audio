@@ -4,13 +4,15 @@ from __future__ import annotations
 
 import re
 import subprocess
-from dataclasses import dataclass
+from dataclasses import dataclass, replace
 from pathlib import Path
 
 from .ffmpeg_binary import require_ffmpeg
+from .ffmpeg_stream import atempo_filter_chain
 from .models import AudioTrack
 
 CURVE_RE = re.compile(r"^[a-z0-9_+-]+$")
+DURATION_RE = re.compile(r"Duration:\s*(\d+):(\d+):(\d+(?:\.\d+)?)")
 
 
 @dataclass(frozen=True)
@@ -61,6 +63,54 @@ def normalize_lossless_config(config: LosslessTransitionConfig | None = None) ->
     )
 
 
+def probe_duration_seconds(ffmpeg: str, source: str | Path, *, timeout: float = 10.0) -> float:
+    result = subprocess.run(
+        [ffmpeg, "-hide_banner", "-nostdin", "-i", str(source)],
+        stdin=subprocess.DEVNULL,
+        stdout=subprocess.DEVNULL,
+        stderr=subprocess.PIPE,
+        timeout=timeout,
+        check=False,
+    )
+    output = result.stderr.decode("utf-8", "ignore")
+    match = DURATION_RE.search(output)
+    if not match:
+        return 0.0
+    hours, minutes, seconds = match.groups()
+    return int(hours) * 3600 + int(minutes) * 60 + float(seconds)
+
+
+def prepare_render_track(ffmpeg: str, source: AudioTrack | str | Path) -> AudioTrack:
+    track = coerce_track(source)
+    if float(track.duration or 0.0) <= 0.0:
+        try:
+            track.duration = probe_duration_seconds(ffmpeg, track.stream_url)
+        except Exception:
+            track.duration = 0.0
+    return track
+
+
+def bounded_lossless_config(
+    current: AudioTrack,
+    next_track: AudioTrack,
+    config: LosslessTransitionConfig,
+) -> LosslessTransitionConfig:
+    durations = [
+        float(track.effective_playable_duration or 0.0)
+        for track in (current, next_track)
+        if float(track.effective_playable_duration or 0.0) > 0.0
+    ]
+    if not durations:
+        return config
+    shortest = min(durations)
+    if shortest <= 0.05:
+        raise ValueError("lossless transition inputs are too short to crossfade safely.")
+    max_crossfade = max(0.05, shortest * 0.95)
+    if config.crossfade_seconds <= max_crossfade:
+        return config
+    return replace(config, crossfade_seconds=max_crossfade)
+
+
 def codec_args_for_output(output: str | Path) -> list[str]:
     suffix = Path(output).suffix.lower()
     if suffix == ".flac":
@@ -84,19 +134,31 @@ def trim_filter(track: AudioTrack) -> str:
             parts.append(f"end={end_at:.6f}")
     if not parts:
         return ""
-    return f"atrim={':'.join(parts)},"
+    return f"atrim={':'.join(parts)}"
+
+
+def gain_filter(track: AudioTrack) -> str:
+    try:
+        gain = max(0.0, min(2.0, float(track.gain or 1.0)))
+    except (TypeError, ValueError):
+        gain = 1.0
+    if abs(gain - 1.0) < 0.0005:
+        return ""
+    return f"volume={gain:.6f}"
 
 
 def source_filter(index: int, track: AudioTrack, config: LosslessTransitionConfig) -> str:
     layout = channel_layout(config.channels)
-    return (
-        f"[{index}:a]"
-        f"{trim_filter(track)}"
-        "asetpts=PTS-STARTPTS,"
-        f"aresample={config.sample_rate},"
-        f"aformat=sample_fmts=fltp:channel_layouts={layout}"
-        f"[a{index}]"
-    )
+    filters = [
+        trim_filter(track),
+        "asetpts=PTS-STARTPTS",
+        atempo_filter_chain(track.tempo_ratio),
+        f"aresample={config.sample_rate}",
+        f"aformat=sample_fmts=fltp:channel_layouts={layout}",
+        gain_filter(track),
+    ]
+    filter_chain = ",".join(part for part in filters if part)
+    return f"[{index}:a]{filter_chain}[a{index}]"
 
 
 def build_lossless_transition_command(
@@ -109,6 +171,7 @@ def build_lossless_transition_command(
     config = normalize_lossless_config(config)
     current_track = coerce_track(current)
     following_track = coerce_track(next_track)
+    config = bounded_lossless_config(current_track, following_track, config)
     output_path = Path(output)
 
     filters = [
@@ -158,10 +221,13 @@ def render_lossless_transition(
 
     output_path = Path(output)
     output_path.parent.mkdir(parents=True, exist_ok=True)
+    ffmpeg = require_ffmpeg()
+    current_track = prepare_render_track(ffmpeg, current)
+    following_track = prepare_render_track(ffmpeg, next_track)
     command = build_lossless_transition_command(
-        require_ffmpeg(),
-        current,
-        next_track,
+        ffmpeg,
+        current_track,
+        following_track,
         output_path,
         config,
     )

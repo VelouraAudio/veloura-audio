@@ -10,10 +10,14 @@ on:
 jobs:
   test:
     name: Test Python ${{ matrix.python-version }}
-    runs-on: ubuntu-latest
+    runs-on: ${{ matrix.os }}
     strategy:
       fail-fast: false
       matrix:
+        os:
+          - ubuntu-latest
+          - macos-latest
+          - windows-latest
         python-version:
           - "3.12"
           - "3.13"
@@ -40,7 +44,7 @@ jobs:
         run: python -m veloura doctor
 
       - name: Compile package
-        run: python -m py_compile veloura/*.py veloura/audio/*.py examples/*.py
+        run: python -m compileall -q veloura examples
 
       - name: Build distributions
         run: python -m build

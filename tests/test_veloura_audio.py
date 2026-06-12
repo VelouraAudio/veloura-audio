@@ -3,11 +3,13 @@ import math
 import struct
 import unittest
 from collections import deque
+from pathlib import Path
 
 from veloura.audio import (
     CrossfadeAudioSource,
     CrossfadeSession,
     MixerTrack,
+    PCMQueuePlayer,
     SmartTransitionConfig,
     normalize_transition_config,
     planned_crossfade_seconds,
@@ -254,6 +256,27 @@ class CrossfadeSessionTests(unittest.TestCase):
         self.assertTrue(track.analysis["cached"])
         self.assertEqual(track.crossfade_seconds, planned_crossfade_seconds(track, config))
 
+    def test_corrupt_cached_analysis_is_ignored(self):
+        config = SmartTransitionConfig(
+            enabled=True,
+            base_crossfade_seconds=10,
+            analyze_silence=False,
+            normalize_loudness=False,
+        )
+        track = MixerTrack(
+            title="corrupt cache",
+            stream_url="https://stream.example.test/corrupt",
+            webpage="https://example.test/corrupt",
+            duration=180,
+            requester_id=42,
+        )
+
+        prepare_smart_transition(track, config, {"version": 1, "trim_start": "bad"})
+
+        self.assertFalse(track.analysis.get("cached", False))
+        self.assertEqual(track.trim_start, 0.0)
+        self.assertEqual(track.crossfade_seconds, planned_crossfade_seconds(track, config))
+
     def test_transition_config_normalizes_bad_bounds(self):
         config = normalize_transition_config(
             SmartTransitionConfig(
@@ -274,6 +297,62 @@ class CrossfadeSessionTests(unittest.TestCase):
         self.assertEqual(config.analysis_timeout_seconds, 0.5)
         self.assertEqual(config.loudness_min_gain, 1.6)
         self.assertEqual(config.loudness_max_gain, 1.6)
+
+    def test_short_track_crossfade_is_bounded_below_one_second(self):
+        config = SmartTransitionConfig(
+            enabled=True,
+            base_crossfade_seconds=8,
+            max_crossfade_seconds=12,
+            analyze_silence=False,
+            normalize_loudness=False,
+        )
+        track = MixerTrack(
+            title="short clip",
+            stream_url="https://stream.example.test/short",
+            webpage="https://example.test/short",
+            duration=0.6,
+            requester_id=42,
+        )
+
+        prepare_smart_transition(track, config)
+
+        self.assertLess(track.crossfade_seconds, 1.0)
+        self.assertAlmostEqual(track.crossfade_seconds, 0.2)
+
+    @unittest.skipUnless(resolve_ffmpeg(), "ffmpeg is required for playback failure reporting")
+    def test_missing_file_sets_snapshot_error(self):
+        player = PCMQueuePlayer()
+        missing = Path("/tmp/veloura-definitely-missing.wav")
+        player.enqueue(MixerTrack("Missing", str(missing), str(missing), 10, 42))
+
+        for _ in range(4):
+            if not player.read_frame():
+                break
+
+        snapshot = player.snapshot()
+        player.stop()
+        self.assertIn("Missing", snapshot.error)
+        self.assertTrue(snapshot.error)
+
+    def test_session_retries_failed_resolution(self):
+        song = {"title": "retry"}
+        attempts = 0
+
+        async def flaky_resolver(_song):
+            nonlocal attempts
+            attempts += 1
+            if attempts == 1:
+                raise RuntimeError("temporary")
+            return MixerTrack("retry", "stream", "web", 10, 42)
+
+        session = CrossfadeSession(volume=0.5, crossfade_seconds=5)
+        queue_items = deque([song])
+        run(session.ensure_buffer(queue_items, resolve_song=flaky_resolver, song_key=lambda item: item["title"]))
+        run(session.ensure_buffer(queue_items, resolve_song=flaky_resolver, song_key=lambda item: item["title"]))
+
+        self.assertEqual(attempts, 2)
+        self.assertEqual(session.source.snapshot()["queue"], ["retry"])
+        session.stop()
 
 
 if __name__ == "__main__":

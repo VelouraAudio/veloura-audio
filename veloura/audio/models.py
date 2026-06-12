@@ -38,6 +38,18 @@ class AudioTrack:
         title: str | None = None,
         webpage: str | None = None,
         duration: float | int | None = None,
+        requester_id: int = 0,
+        payload: Any | None = None,
+        artist: str | None = None,
+        album: str | None = None,
+        artwork_url: str | None = None,
+        source_id: str = "",
+        trim_start: float = 0.0,
+        trim_end: float = 0.0,
+        crossfade_seconds: float | None = None,
+        gain: float = 1.0,
+        tempo: float = 1.0,
+        analysis: dict[str, Any] | None = None,
         **metadata: Any,
     ) -> "AudioTrack":
         """Build a generic track from a local path, direct URL, or stream URL."""
@@ -47,7 +59,19 @@ class AudioTrack:
             stream_url=source,
             webpage=webpage or source,
             duration=float(duration or 0.0),
+            requester_id=requester_id,
+            payload=payload,
+            artist=artist,
+            album=album,
+            artwork_url=artwork_url,
+            source_id=source_id,
             metadata=dict(metadata),
+            trim_start=max(0.0, float(trim_start or 0.0)),
+            trim_end=max(0.0, float(trim_end or 0.0)),
+            crossfade_seconds=crossfade_seconds,
+            gain=float(gain or 1.0),
+            tempo=float(tempo or 1.0),
+            analysis=dict(analysis or {}),
         )
 
     @property

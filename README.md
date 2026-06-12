@@ -29,6 +29,18 @@ your project to one bot implementation.
 - `yt-dlp` only when resolving online stream/search inputs
 - `discord.py` and `PyNaCl` only when using the Discord audio source directly
 
+## 0.6.1 Hardening Snapshot
+
+| Area | Fixed behavior |
+| --- | --- |
+| Playback failures | Bad FFmpeg streams now surface through queue snapshot errors instead of disappearing silently. |
+| CLI health checks | `python -m veloura doctor` rejects invalid configured FFmpeg paths. |
+| Cross-platform playback | PCM stream reads no longer depend on Unix-only pipe `select()` behavior. |
+| Short clips | Crossfade lengths are bounded for very short tracks and lossless renders. |
+| Lossless renders | Prepared gain and tempo settings are applied in file renders. |
+| Cache safety | Corrupt transition cache values are ignored instead of crashing preparation. |
+| Metadata | `AudioTrack.from_source()` now maps common fields like `artist` and `album` directly. |
+
 ## Installation
 
 Install the core package:

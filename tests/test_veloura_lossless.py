@@ -38,7 +38,9 @@ class LosslessTransitionTests(unittest.TestCase):
         current = AudioTrack.from_source("current.flac", title="Current", duration=180)
         current.trim_start = 1.5
         current.trim_end = 2.0
+        current.gain = 0.75
         next_track = AudioTrack.from_source("next.flac", title="Next", duration=200)
+        next_track.tempo = 1.05
         command = build_lossless_transition_command(
             "ffmpeg",
             current,
@@ -51,7 +53,23 @@ class LosslessTransitionTests(unittest.TestCase):
         self.assertIn("aresample=96000", joined)
         self.assertIn("acrossfade=d=7.500000:c1=qsin:c2=qsin", joined)
         self.assertIn("atrim=start=1.500000:end=178.000000", joined)
+        self.assertIn("volume=0.750000", joined)
+        self.assertIn("atempo=1.05", joined)
         self.assertIn("-compression_level", command)
+
+    def test_build_command_bounds_known_short_sources(self):
+        current = AudioTrack.from_source("current.wav", title="Current", duration=0.55)
+        next_track = AudioTrack.from_source("next.wav", title="Next", duration=0.55)
+
+        command = build_lossless_transition_command(
+            "ffmpeg",
+            current,
+            next_track,
+            "transition.flac",
+            LosslessTransitionConfig(crossfade_seconds=8.0),
+        )
+
+        self.assertIn("acrossfade=d=0.522500", " ".join(command))
 
     def test_invalid_config_is_rejected(self):
         with self.assertRaises(ValueError):

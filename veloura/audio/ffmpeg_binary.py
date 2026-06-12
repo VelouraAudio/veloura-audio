@@ -4,6 +4,22 @@ from __future__ import annotations
 
 import os
 import shutil
+from pathlib import Path
+
+
+def _resolve_executable(value: str | None) -> str | None:
+    if not value:
+        return None
+
+    expanded = os.path.expanduser(value)
+    has_path_separator = os.path.sep in expanded or (os.path.altsep and os.path.altsep in expanded)
+    if has_path_separator or Path(expanded).is_absolute():
+        path = Path(expanded)
+        if path.is_file() and os.access(path, os.X_OK):
+            return str(path)
+        return None
+
+    return shutil.which(expanded)
 
 
 def resolve_ffmpeg() -> str | None:
@@ -15,7 +31,7 @@ def resolve_ffmpeg() -> str | None:
 
     configured = os.getenv("VELOURA_FFMPEG") or os.getenv("IMAGEIO_FFMPEG_EXE")
     if configured:
-        return configured
+        return _resolve_executable(configured)
 
     system_ffmpeg = shutil.which("ffmpeg")
     if system_ffmpeg:
@@ -45,12 +61,12 @@ def require_ffmpeg() -> str:
 def resolve_ffprobe() -> str | None:
     configured = os.getenv("VELOURA_FFPROBE")
     if configured:
-        return configured
+        return _resolve_executable(configured)
     return shutil.which("ffprobe")
 
 
 def resolve_ffplay() -> str | None:
     configured = os.getenv("VELOURA_FFPLAY")
     if configured:
-        return configured
+        return _resolve_executable(configured)
     return shutil.which("ffplay")

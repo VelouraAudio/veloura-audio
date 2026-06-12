@@ -39,13 +39,8 @@ class CrossfadeAudioSource(AudioSourceBase):
         return False
 
     def enqueue(self, track: MixerTrack):
-        if not self.lock.acquire(blocking=False):
+        with self.lock:
             self.queue.append(track)
-            return
-        try:
-            self.queue.append(track)
-        finally:
-            self.lock.release()
 
     def clear_pending(self):
         if not self.lock.acquire(blocking=False):
@@ -145,7 +140,7 @@ class CrossfadeAudioSource(AudioSourceBase):
         seconds = self.crossfade_seconds if planned is None else min(self.crossfade_seconds, planned)
         duration = self._duration_locked(track)
         if duration > 0:
-            seconds = min(seconds, max(1.0, duration / 3))
+            seconds = min(seconds, duration / 3)
         return max(0.0, min(15.0, seconds))
 
     def _start_next_locked(self) -> bool:
@@ -263,7 +258,14 @@ class CrossfadeAudioSource(AudioSourceBase):
                 if not self.current_stream and not self._start_next_locked():
                     return b""
 
-                current_frame = self.current_stream.read_frame() if self.current_stream else None
+                try:
+                    current_frame = self.current_stream.read_frame() if self.current_stream else None
+                except Exception as e:
+                    title = self.current.title if self.current else "current track"
+                    self.last_error = f"{title}: {e}"
+                    self._close_current_locked()
+                    self._promote_next_locked()
+                    continue
                 if current_frame:
                     break
 
@@ -276,7 +278,13 @@ class CrossfadeAudioSource(AudioSourceBase):
             self._maybe_crossfade_locked()
 
             if self.next_stream:
-                next_frame = self.next_stream.read_frame()
+                try:
+                    next_frame = self.next_stream.read_frame()
+                except Exception as e:
+                    title = self.next_track.title if self.next_track else "next track"
+                    self.last_error = f"{title}: {e}"
+                    self._close_next_locked()
+                    next_frame = None
                 if next_frame:
                     progress = self._fade_progress_locked()
                     frame = self._mix(current_frame, next_frame, progress)

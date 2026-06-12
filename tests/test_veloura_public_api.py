@@ -1,4 +1,5 @@
 import io
+import os
 import unittest
 from contextlib import redirect_stderr, redirect_stdout
 
@@ -28,11 +29,15 @@ class VelouraPublicApiTests(unittest.TestCase):
             "file:///music/song.wav",
             title="Local Song",
             duration=120,
+            artist="Veloura Artist",
+            album="Night Queue",
             mood="warmup",
         )
 
         self.assertEqual(track.title, "Local Song")
         self.assertEqual(track.webpage, "file:///music/song.wav")
+        self.assertEqual(track.artist, "Veloura Artist")
+        self.assertEqual(track.album, "Night Queue")
         self.assertEqual(track.metadata["mood"], "warmup")
         self.assertEqual(track.playable_duration, 120)
 
@@ -81,6 +86,31 @@ class VelouraPublicApiTests(unittest.TestCase):
         self.assertEqual(code, 1)
         self.assertIn("missing optional thing", error.getvalue())
         self.assertNotIn("Traceback", error.getvalue())
+
+    def test_cli_reports_value_errors_without_traceback(self):
+        error = io.StringIO()
+        with redirect_stderr(error):
+            code = main(["prepare", "song.wav", "--preset", "not-real"])
+
+        self.assertEqual(code, 1)
+        self.assertIn("Unknown Veloura preset", error.getvalue())
+        self.assertNotIn("Traceback", error.getvalue())
+
+    def test_doctor_rejects_bad_configured_ffmpeg(self):
+        original = os.environ.get("VELOURA_FFMPEG")
+        os.environ["VELOURA_FFMPEG"] = "/tmp/veloura-not-a-real-ffmpeg"
+        output = io.StringIO()
+        try:
+            with redirect_stdout(output):
+                code = main(["doctor"])
+        finally:
+            if original is None:
+                os.environ.pop("VELOURA_FFMPEG", None)
+            else:
+                os.environ["VELOURA_FFMPEG"] = original
+
+        self.assertEqual(code, 1)
+        self.assertIn('"ffmpeg_usable": false', output.getvalue())
 
 
 if __name__ == "__main__":

@@ -22,6 +22,7 @@
         <a href="#automix">AutoMix</a>
         <a href="#demo">Demo</a>
         <a href="#lossless">Lossless</a>
+        <a href="#hardening">Fixes</a>
         <a href="#troubleshooting">Troubleshoot</a>
         <a href="https://github.com/VelouraAudio/veloura-audio">GitHub</a>
       </nav>
@@ -58,6 +59,50 @@
           <article>
             <h2>Lossless Renders</h2>
             <p>Render FLAC, WAV, ALAC, or AIFF transition files without lossy re-encoding.</p>
+          </article>
+        </div>
+      </section>
+
+      <section id="hardening" class="section hardening-section">
+        <div class="demo-header">
+          <p class="section-label">0.6.1 Hardening</p>
+          <h2>Bugfixes that make Veloura safer to ship.</h2>
+          <p>
+            This patch focuses on reliability: clearer failures, safer defaults,
+            cross-platform runtime behavior, and file renders that match prepared
+            transition settings more closely.
+          </p>
+        </div>
+        <div class="fix-grid" aria-label="Bugfix summary">
+          <article>
+            <span class="fix-badge">Runtime</span>
+            <h3>Visible track errors</h3>
+            <p>Bad sources now show up in queue snapshots instead of silently ending playback.</p>
+          </article>
+          <article>
+            <span class="fix-badge">Doctor</span>
+            <h3>Real FFmpeg checks</h3>
+            <p>Configured FFmpeg paths are validated before the CLI reports a healthy setup.</p>
+          </article>
+          <article>
+            <span class="fix-badge">Portable</span>
+            <h3>Windows-safe reads</h3>
+            <p>PCM streaming no longer depends on Unix-only pipe readiness behavior.</p>
+          </article>
+          <article>
+            <span class="fix-badge">Audio</span>
+            <h3>Short clip bounds</h3>
+            <p>Crossfades are clamped for tiny tracks so transitions stay sane.</p>
+          </article>
+          <article>
+            <span class="fix-badge">Render</span>
+            <h3>Gain and tempo parity</h3>
+            <p>Lossless file renders now apply prepared gain and tempo settings.</p>
+          </article>
+          <article>
+            <span class="fix-badge">Cache</span>
+            <h3>Bad cache ignored</h3>
+            <p>Invalid cached transition values fall back to fresh safe planning.</p>
           </article>
         </div>
       </section>

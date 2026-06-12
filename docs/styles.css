@@ -410,7 +410,8 @@ pre code {
 }
 
 .use-cases,
-.demo-section {
+.demo-section,
+.hardening-section {
   border-top: 1px solid var(--line);
 }
 
@@ -570,6 +571,45 @@ pre code {
   margin-top: 18px;
 }
 
+.fix-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 14px;
+  margin-top: 32px;
+}
+
+.fix-grid article {
+  min-height: 188px;
+  padding: 22px;
+  border: 1px solid rgba(255, 79, 216, 0.22);
+  border-radius: 8px;
+  background:
+    linear-gradient(180deg, rgba(255, 79, 216, 0.08), rgba(255, 255, 255, 0.03)),
+    var(--panel);
+}
+
+.fix-badge {
+  display: inline-flex;
+  align-items: center;
+  min-height: 26px;
+  padding: 0 9px;
+  border: 1px solid rgba(104, 247, 255, 0.32);
+  border-radius: 999px;
+  color: var(--cyan);
+  font-size: 12px;
+  font-weight: 800;
+  text-transform: uppercase;
+}
+
+.fix-grid h3 {
+  margin-top: 18px;
+}
+
+.fix-grid p {
+  margin-top: 10px;
+  font-size: 15px;
+}
+
 .lossless-facts {
   display: grid;
   grid-template-columns: repeat(3, minmax(0, 1fr));
@@ -665,6 +705,7 @@ pre code {
   .split.reverse,
   .audio-demo,
   .demo-grid,
+  .fix-grid,
   .lossless-facts,
   .use-case-grid {
     grid-template-columns: 1fr;

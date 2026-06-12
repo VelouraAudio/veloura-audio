@@ -70,7 +70,6 @@ class CrossfadeSession:
             try:
                 track = await resolve_song(song)
             except Exception as e:
-                self.enqueued_ids.add(song_id)
                 if on_error:
                     result = on_error(song, e)
                     if result:

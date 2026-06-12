@@ -121,7 +121,7 @@ def planned_crossfade_seconds(track: MixerTrack, config: SmartTransitionConfig) 
     if track.trim_end >= 2.0:
         base = min(base, max(config.min_crossfade_seconds, config.base_crossfade_seconds * 0.65))
 
-    return clamp(base, 0.0, min(config.max_crossfade_seconds, max(1.0, duration / 3)))
+    return clamp(base, 0.0, min(config.max_crossfade_seconds, duration / 3))
 
 
 def analyze_silence(track: MixerTrack, config: SmartTransitionConfig) -> SilenceProfile:
@@ -329,9 +329,15 @@ def run_volumedetect(
 def apply_cached_analysis(track: MixerTrack, cached_analysis: dict) -> bool:
     if cached_analysis.get("version") != ANALYSIS_VERSION:
         return False
-    track.trim_start = float(cached_analysis.get("trim_start", 0.0) or 0.0)
-    track.trim_end = float(cached_analysis.get("trim_end", 0.0) or 0.0)
-    track.gain = float(cached_analysis.get("gain", 1.0) or 1.0)
+    try:
+        trim_start = max(0.0, float(cached_analysis.get("trim_start", 0.0) or 0.0))
+        trim_end = max(0.0, float(cached_analysis.get("trim_end", 0.0) or 0.0))
+        gain = clamp(float(cached_analysis.get("gain", 1.0) or 1.0), 0.0, 2.0)
+    except (TypeError, ValueError):
+        return False
+    track.trim_start = trim_start
+    track.trim_end = trim_end
+    track.gain = gain
     track.analysis = dict(cached_analysis)
     track.analysis["cached"] = True
     return True
