@@ -1,6 +1,7 @@
 import asyncio
 import math
 import struct
+import tempfile
 import unittest
 from collections import deque
 from pathlib import Path
@@ -321,18 +322,19 @@ class CrossfadeSessionTests(unittest.TestCase):
 
     @unittest.skipUnless(resolve_ffmpeg(), "ffmpeg is required for playback failure reporting")
     def test_missing_file_sets_snapshot_error(self):
-        player = PCMQueuePlayer()
-        missing = Path("/tmp/veloura-definitely-missing.wav")
-        player.enqueue(MixerTrack("Missing", str(missing), str(missing), 10, 42))
+        with tempfile.TemporaryDirectory() as temp_dir:
+            player = PCMQueuePlayer()
+            missing = Path(temp_dir) / "veloura-definitely-missing.wav"
+            player.enqueue(MixerTrack("Missing", str(missing), str(missing), 10, 42))
 
-        for _ in range(4):
-            if not player.read_frame():
-                break
+            for _ in range(4):
+                if not player.read_frame():
+                    break
 
-        snapshot = player.snapshot()
-        player.stop()
-        self.assertIn("Missing", snapshot.error)
-        self.assertTrue(snapshot.error)
+            snapshot = player.snapshot()
+            player.stop()
+            self.assertIn("Missing", snapshot.error)
+            self.assertTrue(snapshot.error)
 
     def test_session_retries_failed_resolution(self):
         song = {"title": "retry"}

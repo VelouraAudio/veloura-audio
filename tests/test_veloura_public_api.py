@@ -1,6 +1,8 @@
 import io
 import os
+import tempfile
 import unittest
+from pathlib import Path
 from contextlib import redirect_stderr, redirect_stdout
 
 from veloura.audio import (
@@ -98,16 +100,17 @@ class VelouraPublicApiTests(unittest.TestCase):
 
     def test_doctor_rejects_bad_configured_ffmpeg(self):
         original = os.environ.get("VELOURA_FFMPEG")
-        os.environ["VELOURA_FFMPEG"] = "/tmp/veloura-not-a-real-ffmpeg"
         output = io.StringIO()
-        try:
-            with redirect_stdout(output):
-                code = main(["doctor"])
-        finally:
-            if original is None:
-                os.environ.pop("VELOURA_FFMPEG", None)
-            else:
-                os.environ["VELOURA_FFMPEG"] = original
+        with tempfile.TemporaryDirectory() as temp_dir:
+            os.environ["VELOURA_FFMPEG"] = str(Path(temp_dir) / "veloura-not-a-real-ffmpeg")
+            try:
+                with redirect_stdout(output):
+                    code = main(["doctor"])
+            finally:
+                if original is None:
+                    os.environ.pop("VELOURA_FFMPEG", None)
+                else:
+                    os.environ["VELOURA_FFMPEG"] = original
 
         self.assertEqual(code, 1)
         self.assertIn('"ffmpeg_usable": false', output.getvalue())

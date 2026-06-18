@@ -150,12 +150,19 @@ class FFmpegPCMStream:
             payload = b"".join(self.stderr_chunks)
         return payload.decode("utf-8", "ignore").strip()
 
-    def _raise_if_failed(self) -> None:
+    def _raise_if_failed(self, *, wait: bool = False) -> None:
         return_code = self.process.poll()
+        if return_code is None and wait:
+            try:
+                return_code = self.process.wait(timeout=0.25)
+            except subprocess.TimeoutExpired:
+                return
         if return_code is None:
             return
         if return_code == 0:
             return
+        if wait and self.stderr_thread.is_alive():
+            self.stderr_thread.join(timeout=0.25)
         message = self._stderr_text()
         last_line = message.splitlines()[-1] if message else "ffmpeg exited without decoded audio."
         raise RuntimeError(last_line)
@@ -166,13 +173,13 @@ class FFmpegPCMStream:
         except queue.Empty:
             self.empty_reads += 1
             if self.empty_reads >= MAX_EMPTY_READS:
-                self._raise_if_failed()
+                self._raise_if_failed(wait=True)
                 return None
             self._raise_if_failed()
             return b"\x00" * FRAME_BYTES
 
         if frame is None:
-            self._raise_if_failed()
+            self._raise_if_failed(wait=True)
             return None
 
         self.empty_reads = 0
@@ -199,3 +206,6 @@ class FFmpegPCMStream:
                     self.process.kill()
                 except Exception:
                     pass
+        for thread in (self.stdout_thread, self.stderr_thread):
+            if thread.is_alive():
+                thread.join(timeout=0.25)
