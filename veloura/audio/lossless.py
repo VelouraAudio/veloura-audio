@@ -1,4 +1,4 @@
-"""Lossless-quality transition rendering for file outputs."""
+"""Lossless file transition rendering for file outputs."""
 
 from __future__ import annotations
 
@@ -217,7 +217,7 @@ def render_lossless_transition(
     *,
     timeout: float | None = None,
 ) -> Path:
-    """Render a lossless-quality transition file and return the output path."""
+    """Render a lossless transition file and return the output path."""
 
     output_path = Path(output)
     output_path.parent.mkdir(parents=True, exist_ok=True)

@@ -14,7 +14,7 @@ import wave
 from dataclasses import dataclass
 from html.parser import HTMLParser
 from pathlib import Path
-from urllib.parse import urljoin
+from urllib.parse import urljoin, urlparse
 
 PROJECT_ROOT = Path(__file__).resolve().parents[1]
 if str(PROJECT_ROOT) not in sys.path:
@@ -39,6 +39,7 @@ USER_AGENT = "veloura-audio-demo/0.6.1"
 DEFAULT_QUEUE_OUTPUT = PROJECT_ROOT / "docs" / "assets" / "veloura-transition-demo.wav"
 DEFAULT_LOSSLESS_OUTPUT = PROJECT_ROOT / "docs" / "assets" / "veloura-lossless-transition-demo.wav"
 DEFAULT_LOSSLESS_FLAC_OUTPUT = PROJECT_ROOT / "docs" / "assets" / "veloura-lossless-transition-demo.flac"
+ALLOWED_DEMO_HOST = "opengameart.org"
 
 
 @dataclass(frozen=True)
@@ -91,10 +92,22 @@ class AttachmentLinkParser(HTMLParser):
             self.match = self._href
 
 
+def validate_demo_url(url: str) -> str:
+    parsed = urlparse(url)
+    host = (parsed.hostname or "").lower()
+    if parsed.scheme != "https":
+        raise RuntimeError(f"Demo source URL must use https: {url}")
+    if host != ALLOWED_DEMO_HOST and not host.endswith(f".{ALLOWED_DEMO_HOST}"):
+        raise RuntimeError(f"Unexpected demo source host: {host or '<missing>'}")
+    return url
+
+
 def fetch_text(url: str) -> str:
+    url = validate_demo_url(url)
     request = urllib.request.Request(url, headers={"User-Agent": USER_AGENT})
     try:
-        with urllib.request.urlopen(request, timeout=30) as response:
+        # validate_demo_url restricts this to HTTPS OpenGameArt URLs.
+        with urllib.request.urlopen(request, timeout=30) as response:  # nosec B310
             return response.read().decode("utf-8", errors="replace")
     except urllib.error.URLError:
         curl = shutil.which("curl")
@@ -109,9 +122,11 @@ def fetch_text(url: str) -> str:
 
 
 def download_file(url: str, output: Path) -> None:
+    url = validate_demo_url(url)
     request = urllib.request.Request(url, headers={"User-Agent": USER_AGENT})
     try:
-        with urllib.request.urlopen(request, timeout=60) as response:
+        # validate_demo_url restricts this to HTTPS OpenGameArt URLs.
+        with urllib.request.urlopen(request, timeout=60) as response:  # nosec B310
             output.write_bytes(response.read())
     except urllib.error.URLError:
         curl = shutil.which("curl")
@@ -128,7 +143,7 @@ def resolve_attachment_url(source: DemoSource) -> str:
     parser.feed(fetch_text(source.page_url))
     if not parser.match:
         raise RuntimeError(f"Could not find {source.filename!r} on {source.page_url}")
-    return urljoin(source.page_url, parser.match)
+    return validate_demo_url(urljoin(source.page_url, parser.match))
 
 
 def clip_to_wav(ffmpeg: str, source: Path, output: Path, start_seconds: float) -> None:

@@ -11,7 +11,7 @@ your project to one bot implementation.
 ## Features
 
 - Equal-power crossfade mixing for signed 16-bit PCM audio
-- Lossless-quality transition rendering to FLAC, WAV, ALAC, or AIFF
+- Lossless file transition rendering to FLAC, WAV, ALAC, or AIFF
 - Discord-independent PCM queue player with snapshots and playback controls
 - Smart transition planning based on track duration, silence trim, and loudness
 - Beat/BPM analysis with beat-aware transition plans
@@ -182,7 +182,7 @@ render_lossless_transition(
 )
 ```
 
-This is lossless-quality transition processing, not bit-perfect copying, because
+This is lossless file transition processing, not bit-perfect copying, because
 crossfading intentionally changes the waveform. Discord voice output is still
 encoded by Discord.
 
@@ -225,6 +225,10 @@ slash-command sync is much faster than global sync.
 When inviting the bot, enable the `bot` and `applications.commands` scopes and
 grant Connect/Speak voice permissions.
 
+For public bots, treat user search terms and URLs as untrusted input. Keep
+permission checks in the bot, rate-limit stream resolution, and avoid exposing
+`yt-dlp` resolution to users who should not be able to trigger network lookups.
+
 ## Standalone Example
 
 The example player resolves local files or stream queries, prepares transition
@@ -260,6 +264,8 @@ but Veloura credits the sources so the demo has clear provenance.
 - Run `python -m veloura doctor` to verify FFmpeg and optional integrations.
 - Set `VELOURA_FFMPEG=/path/to/ffmpeg` if you want Veloura to use a specific
   FFmpeg executable instead of the bundled provider.
+- Set `VELOURA_YTDLP_SOURCE_ADDRESS` only when you need `yt-dlp` to use a
+  specific outbound network interface.
 - Install system FFmpeg if you want to use the standalone `ffplay` example.
 - Install `veloura-audio[stream]` when resolving YouTube URLs or search
   queries through `yt-dlp`.

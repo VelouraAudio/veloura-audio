@@ -1,5 +1,6 @@
 include README.md
 include LICENSE
+include SECURITY.md
 recursive-include docs *.css *.html *.js *.md
 exclude docs/assets/*.wav
 exclude docs/assets/*.flac
