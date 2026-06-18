@@ -18,6 +18,10 @@ YDL_STREAM_OPTIONS = {
     "quiet": True,
     "no_warnings": True,
     "default_search": "ytsearch",
+    "socket_timeout": 15,
+    "retries": 2,
+    "fragment_retries": 2,
+    "extractor_retries": 2,
     "format_sort": ["abr", "asr", "codec:opus"],
     "prefer_free_formats": True,
 }

@@ -60,6 +60,19 @@ class FileAnalysisCacheTests(unittest.TestCase):
 
             self.assertFalse(long.analysis.get("cached", False))
 
+    def test_cache_prunes_to_max_entries(self):
+        with tempfile.TemporaryDirectory() as temp_dir:
+            cache = FileAnalysisCache(temp_dir, max_entries=1)
+            config = SmartTransitionConfig(analyze_silence=False, normalize_loudness=False)
+            first = AudioTrack.from_source("https://example.test/first", title="First", duration=180)
+            second = AudioTrack.from_source("https://example.test/second", title="Second", duration=180)
+
+            cache.prepare_transition(first, config)
+            cache.prepare_transition(second, config)
+
+            files = list((Path(temp_dir) / "transition").glob("*.json"))
+            self.assertEqual(len(files), 1)
+
 
 @unittest.skipUnless(resolve_ffmpeg(), "ffmpeg is required for generated audio analysis")
 class GeneratedAudioAnalysisTests(unittest.TestCase):

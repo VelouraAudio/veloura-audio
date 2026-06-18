@@ -42,8 +42,13 @@ class PCMQueuePlayer:
         *,
         volume: float = MIXER_DEFAULT_VOLUME,
         crossfade_seconds: float = MIXER_CROSSFADE_SECONDS,
+        max_queue_size: int | None = None,
     ):
-        self.source = CrossfadeAudioSource(volume=volume, crossfade_seconds=crossfade_seconds)
+        self.source = CrossfadeAudioSource(
+            volume=volume,
+            crossfade_seconds=crossfade_seconds,
+            max_queue_size=max_queue_size,
+        )
 
     def enqueue(self, track: AudioTrack) -> AudioTrack:
         self.source.enqueue(track)

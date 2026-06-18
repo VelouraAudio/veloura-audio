@@ -23,6 +23,7 @@ import asyncio
 import logging
 import os
 import sys
+import time
 from dataclasses import dataclass, field
 from pathlib import Path
 
@@ -44,6 +45,14 @@ TOKEN_ENV = "DISCORD_TOKEN"
 GUILD_ENV = "DISCORD_GUILD_ID"
 PRESET_ENV = "VELOURA_PRESET"
 VOLUME_ENV = "VELOURA_VOLUME"
+DJ_ROLE_ENV = "VELOURA_DJ_ROLE_ID"
+MAX_QUEUE_ENV = "VELOURA_MAX_QUEUE_SIZE"
+PLAY_COOLDOWN_ENV = "VELOURA_PLAY_COOLDOWN_SECONDS"
+RESOLVE_TIMEOUT_ENV = "VELOURA_RESOLVE_TIMEOUT_SECONDS"
+CACHE_MAX_ENTRIES_ENV = "VELOURA_CACHE_MAX_ENTRIES"
+CACHE_TTL_ENV = "VELOURA_CACHE_TTL_SECONDS"
+
+ALLOWED_MENTIONS = discord.AllowedMentions.none()
 
 
 def getenv_float(name: str, default: float) -> float:
@@ -63,11 +72,31 @@ def getenv_int(name: str) -> int | None:
         raise SystemExit(f"{name} must be a numeric Discord ID.")
 
 
+def getenv_int_default(name: str, default: int) -> int:
+    value = os.getenv(name)
+    if not value:
+        return default
+    try:
+        return int(value)
+    except ValueError:
+        return default
+
+
 PRESET_NAME = os.getenv(PRESET_ENV, "streamer")
 CONFIG = transition_preset(PRESET_NAME)
 DEFAULT_VOLUME = max(0.0, min(1.5, getenv_float(VOLUME_ENV, 0.65)))
 GUILD_ID = getenv_int(GUILD_ENV)
-CACHE = FileAnalysisCache(os.getenv("VELOURA_CACHE_DIR") or None)
+DJ_ROLE_ID = getenv_int(DJ_ROLE_ENV)
+MAX_QUEUE_SIZE = max(1, min(500, getenv_int_default(MAX_QUEUE_ENV, 50)))
+PLAY_COOLDOWN_SECONDS = max(0.0, min(60.0, getenv_float(PLAY_COOLDOWN_ENV, 5.0)))
+RESOLVE_TIMEOUT_SECONDS = max(5.0, min(120.0, getenv_float(RESOLVE_TIMEOUT_ENV, 35.0)))
+CACHE_MAX_ENTRIES = max(1, min(10_000, getenv_int_default(CACHE_MAX_ENTRIES_ENV, 1000)))
+CACHE_TTL_SECONDS = max(60.0, getenv_float(CACHE_TTL_ENV, 7 * 24 * 60 * 60))
+CACHE = FileAnalysisCache(
+    os.getenv("VELOURA_CACHE_DIR") or None,
+    max_entries=CACHE_MAX_ENTRIES,
+    ttl_seconds=CACHE_TTL_SECONDS,
+)
 
 
 @dataclass
@@ -76,6 +105,7 @@ class GuildAudioState:
     crossfade_seconds: float = CONFIG.base_crossfade_seconds
     source: CrossfadeAudioSource = field(default_factory=lambda: make_source(DEFAULT_VOLUME))
     lock: asyncio.Lock = field(default_factory=asyncio.Lock)
+    last_play_at: dict[int, float] = field(default_factory=dict)
     last_error: str = ""
 
     def reset_source(self) -> None:
@@ -86,6 +116,7 @@ def make_source(volume: float, crossfade_seconds: float | None = None) -> Crossf
     return CrossfadeAudioSource(
         volume=volume,
         crossfade_seconds=CONFIG.base_crossfade_seconds if crossfade_seconds is None else crossfade_seconds,
+        max_queue_size=MAX_QUEUE_SIZE,
     )
 
 
@@ -129,19 +160,64 @@ def playback_after(guild_id: int):
     return after
 
 
-async def connect_to_user_channel(interaction: discord.Interaction) -> discord.VoiceClient:
+def clean_text(value: object, *, limit: int = 180) -> str:
+    text = str(value or "")
+    text = discord.utils.escape_mentions(text)
+    text = discord.utils.escape_markdown(text)
+    text = text.replace("`", "'")
+    if len(text) > limit:
+        return text[: limit - 1] + "..."
+    return text
+
+
+def member_has_dj_role(member: discord.Member) -> bool:
+    if member.guild_permissions.administrator or member.guild_permissions.manage_guild:
+        return True
+    if DJ_ROLE_ID is None:
+        return True
+    return any(role.id == DJ_ROLE_ID for role in getattr(member, "roles", ()))
+
+
+def member_voice_channel(interaction: discord.Interaction) -> discord.abc.Connectable:
     if not interaction.guild:
         raise RuntimeError("Use this command inside a server.")
     if not isinstance(interaction.user, discord.Member):
         raise RuntimeError("Could not inspect your voice channel.")
     if not interaction.user.voice or not interaction.user.voice.channel:
         raise RuntimeError("Join a voice channel first.")
+    return interaction.user.voice.channel
 
-    channel = interaction.user.voice.channel
+
+def require_same_voice(interaction: discord.Interaction) -> None:
+    channel = member_voice_channel(interaction)
+    if interaction.guild and interaction.guild.voice_client and interaction.guild.voice_client.is_connected():
+        if interaction.guild.voice_client.channel != channel:
+            raise RuntimeError("Join my current voice channel first.")
+
+
+def require_dj_control(interaction: discord.Interaction) -> None:
+    require_same_voice(interaction)
+    if not isinstance(interaction.user, discord.Member) or not member_has_dj_role(interaction.user):
+        raise RuntimeError("You need the configured DJ role for this command.")
+
+
+def enforce_play_cooldown(state: GuildAudioState, user_id: int) -> None:
+    if PLAY_COOLDOWN_SECONDS <= 0:
+        return
+    now = time.monotonic()
+    last = state.last_play_at.get(user_id, 0.0)
+    remaining = PLAY_COOLDOWN_SECONDS - (now - last)
+    if remaining > 0:
+        raise RuntimeError(f"Wait {remaining:.1f}s before queuing another track.")
+    state.last_play_at[user_id] = now
+
+
+async def connect_to_user_channel(interaction: discord.Interaction) -> discord.VoiceClient:
+    channel = member_voice_channel(interaction)
     voice_client = interaction.guild.voice_client
     if voice_client and voice_client.is_connected():
         if voice_client.channel != channel:
-            await voice_client.move_to(channel)
+            raise RuntimeError("Join my current voice channel first.")
         return voice_client
 
     return await channel.connect()
@@ -172,26 +248,42 @@ async def on_ready() -> None:
 async def play(interaction: discord.Interaction, query: str) -> None:
     await interaction.response.defer(thinking=True)
     try:
+        require_same_voice(interaction)
+        if not isinstance(interaction.user, discord.Member) or not member_has_dj_role(interaction.user):
+            raise RuntimeError("You need the configured DJ role to queue tracks.")
         voice_client = await connect_to_user_channel(interaction)
         if not interaction.guild:
             raise RuntimeError("Use this command inside a server.")
+
+        state = state_for(interaction.guild.id)
+        async with state.lock:
+            if len(state.source.snapshot().get("queue") or []) >= MAX_QUEUE_SIZE:
+                raise RuntimeError(f"Queue limit reached ({MAX_QUEUE_SIZE}).")
+            enforce_play_cooldown(state, interaction.user.id)
 
         track = await resolve_stream_track(
             query,
             requester_id=interaction.user.id,
             transition_config=CONFIG,
             analysis_cache=CACHE,
+            timeout=RESOLVE_TIMEOUT_SECONDS,
         )
-        state = state_for(interaction.guild.id)
         async with state.lock:
             if not voice_client.is_playing() and not voice_client.is_paused():
                 state.reset_source()
             state.source.enqueue(track)
             start_if_needed(voice_client, state, interaction.guild.id)
 
-        await interaction.followup.send(f"Queued **{track.title}**")
+        await interaction.followup.send(
+            f"Queued **{clean_text(track.title)}**",
+            allowed_mentions=ALLOWED_MENTIONS,
+        )
     except Exception as exc:
-        await interaction.followup.send(f"Could not queue track: `{exc}`", ephemeral=True)
+        await interaction.followup.send(
+            f"Could not queue track: `{clean_text(exc)}`",
+            ephemeral=True,
+            allowed_mentions=ALLOWED_MENTIONS,
+        )
 
 
 @bot.tree.command(name="queue", description="Show the current Veloura queue.")
@@ -202,20 +294,20 @@ async def queue_command(interaction: discord.Interaction) -> None:
 
     state = state_for(interaction.guild.id)
     snapshot = state.source.snapshot()
-    current = snapshot.get("current") or "Nothing playing"
+    current = clean_text(snapshot.get("current") or "Nothing playing")
     queued = list(snapshot.get("queue") or [])
     lines = [f"Now: **{current}**"]
     if queued:
         lines.append("Up next:")
-        lines.extend(f"{index}. {title}" for index, title in enumerate(queued[:10], start=1))
+        lines.extend(f"{index}. {clean_text(title)}" for index, title in enumerate(queued[:10], start=1))
     else:
         lines.append("Queue is empty.")
 
     error = snapshot.get("error") or state.last_error
     if error:
-        lines.append(f"Last audio warning: `{error}`")
+        lines.append(f"Last audio warning: `{clean_text(error)}`")
 
-    await interaction.response.send_message("\n".join(lines))
+    await interaction.response.send_message("\n".join(lines), allowed_mentions=ALLOWED_MENTIONS)
 
 
 @bot.tree.command(name="now", description="Show current playback state.")
@@ -226,12 +318,13 @@ async def now(interaction: discord.Interaction) -> None:
 
     state = state_for(interaction.guild.id)
     snapshot = state.source.snapshot()
-    current = snapshot.get("current") or "Nothing playing"
+    current = clean_text(snapshot.get("current") or "Nothing playing")
     elapsed = format_seconds(float(snapshot.get("elapsed") or 0.0))
     duration = format_seconds(float(snapshot.get("duration") or 0.0))
     await interaction.response.send_message(
         f"Now: **{current}**\nElapsed: `{elapsed}` / `{duration}`\n"
-        f"Crossfade: `{snapshot.get('crossfade', 0):.2f}s`"
+        f"Crossfade: `{snapshot.get('crossfade', 0):.2f}s`",
+        allowed_mentions=ALLOWED_MENTIONS,
     )
 
 
@@ -241,15 +334,27 @@ async def skip(interaction: discord.Interaction) -> None:
         await interaction.response.send_message("Use this command inside a server.", ephemeral=True)
         return
 
+    try:
+        require_dj_control(interaction)
+    except Exception as exc:
+        await interaction.response.send_message(f"`{clean_text(exc)}`", ephemeral=True, allowed_mentions=ALLOWED_MENTIONS)
+        return
+
     state = state_for(interaction.guild.id)
     skipped = state.source.skip()
-    await interaction.response.send_message("Skipped." if skipped else "Nothing to skip.")
+    await interaction.response.send_message("Skipped." if skipped else "Nothing to skip.", allowed_mentions=ALLOWED_MENTIONS)
 
 
 @bot.tree.command(name="stop", description="Stop playback, clear queue, and disconnect.")
 async def stop(interaction: discord.Interaction) -> None:
     if not interaction.guild:
         await interaction.response.send_message("Use this command inside a server.", ephemeral=True)
+        return
+
+    try:
+        require_dj_control(interaction)
+    except Exception as exc:
+        await interaction.response.send_message(f"`{clean_text(exc)}`", ephemeral=True, allowed_mentions=ALLOWED_MENTIONS)
         return
 
     state = state_for(interaction.guild.id)
@@ -259,7 +364,7 @@ async def stop(interaction: discord.Interaction) -> None:
     if voice_client:
         voice_client.stop()
         await voice_client.disconnect(force=False)
-    await interaction.response.send_message("Stopped and cleared the queue.")
+    await interaction.response.send_message("Stopped and cleared the queue.", allowed_mentions=ALLOWED_MENTIONS)
 
 
 @bot.tree.command(name="volume", description="Set Veloura playback volume from 0.0 to 1.5.")
@@ -269,10 +374,16 @@ async def volume(interaction: discord.Interaction, level: float) -> None:
         await interaction.response.send_message("Use this command inside a server.", ephemeral=True)
         return
 
+    try:
+        require_dj_control(interaction)
+    except Exception as exc:
+        await interaction.response.send_message(f"`{clean_text(exc)}`", ephemeral=True, allowed_mentions=ALLOWED_MENTIONS)
+        return
+
     state = state_for(interaction.guild.id)
     state.volume = max(0.0, min(1.5, float(level)))
     state.source.set_volume(state.volume)
-    await interaction.response.send_message(f"Volume set to `{state.volume:.2f}`.")
+    await interaction.response.send_message(f"Volume set to `{state.volume:.2f}`.", allowed_mentions=ALLOWED_MENTIONS)
 
 
 def main() -> int:

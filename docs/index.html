@@ -65,7 +65,7 @@
 
       <section id="hardening" class="section hardening-section">
         <div class="demo-header">
-          <p class="section-label">0.6.2 Hardening</p>
+          <p class="section-label">0.6.3 Hardening</p>
           <h2>Bugfixes that make Veloura safer to ship.</h2>
           <p>
             This patch focuses on reliability: clearer failures, safer defaults,
@@ -287,7 +287,9 @@ snapshot = player.snapshot().to_dict()</code></pre>
             Veloura for stream resolution, transition prep, and Discord voice
             playback. It includes <code>/play</code>, <code>/queue</code>,
             <code>/now</code>, <code>/skip</code>, <code>/stop</code>, and
-            <code>/volume</code>.
+            <code>/volume</code>. Public-bot guardrails include same-channel
+            controls, optional DJ role checks, mention escaping, queue caps,
+            cooldowns, resolver timeouts, and bounded cache storage.
             Invite it with the <code>bot</code> and
             <code>applications.commands</code> scopes, plus Connect/Speak voice
             permissions.
@@ -296,6 +298,7 @@ snapshot = player.snapshot().to_dict()</code></pre>
         <pre class="code-panel"><code>pip install "veloura-audio[all]"
 export DISCORD_TOKEN="your-bot-token"
 export DISCORD_GUILD_ID="your-test-server-id"
+export VELOURA_DJ_ROLE_ID="your-dj-role-id"
 python examples/discord_slash_bot.py</code></pre>
       </section>
 
@@ -393,7 +396,7 @@ python examples/discord_slash_bot.py</code></pre>
           </article>
           <article>
             <h3>Public Bots</h3>
-            <p>Rate-limit user searches and URLs before handing them to <code>yt-dlp</code>, and keep permission checks in your bot.</p>
+            <p>Use same-channel checks, cooldowns, queue caps, resolver timeouts, and permission checks before handing input to <code>yt-dlp</code>.</p>
           </article>
         </div>
       </section>

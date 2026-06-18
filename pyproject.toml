@@ -4,11 +4,17 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "veloura-audio"
-version = "0.6.2"
+version = "0.6.3"
 description = "Reusable Python audio engine with crossfade and beat-aware transition planning."
 readme = "README.md"
 requires-python = ">=3.12"
 license = "MIT"
+authors = [
+    { name = "Veloura Audio" },
+]
+maintainers = [
+    { name = "Veloura Audio" },
+]
 keywords = [
     "audio",
     "crossfade",

@@ -29,8 +29,12 @@ class CrossfadeAdvance:
 
 
 class CrossfadeSession:
-    def __init__(self, *, volume: float, crossfade_seconds: float):
-        self.source = CrossfadeAudioSource(volume=volume, crossfade_seconds=crossfade_seconds)
+    def __init__(self, *, volume: float, crossfade_seconds: float, max_queue_size: int | None = None):
+        self.source = CrossfadeAudioSource(
+            volume=volume,
+            crossfade_seconds=crossfade_seconds,
+            max_queue_size=max_queue_size,
+        )
         self.enqueued_ids: set[str] = set()
 
     def song_id(self, song: Any, song_key: SongKey) -> str:

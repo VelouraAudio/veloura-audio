@@ -74,8 +74,16 @@ class FileAnalysisCache:
     payloads keyed by source/config fingerprints.
     """
 
-    def __init__(self, root: str | os.PathLike[str] | None = None):
+    def __init__(
+        self,
+        root: str | os.PathLike[str] | None = None,
+        *,
+        max_entries: int | None = None,
+        ttl_seconds: float | None = None,
+    ):
         self.root = Path(root).expanduser() if root else default_cache_dir()
+        self.max_entries = int(max_entries) if max_entries and int(max_entries) > 0 else None
+        self.ttl_seconds = float(ttl_seconds) if ttl_seconds and float(ttl_seconds) > 0 else None
 
     def path_for(self, kind: str, key: str) -> Path:
         safe_kind = "".join(ch for ch in kind if ch.isalnum() or ch in {"-", "_"}) or "analysis"
@@ -106,7 +114,59 @@ class FileAnalysisCache:
         with tmp_path.open("w", encoding="utf-8") as handle:
             json.dump(document, handle, sort_keys=True, separators=(",", ":"))
         tmp_path.replace(path)
+        self.prune(kind)
         return path
+
+    def prune(self, kind: str | None = None) -> int:
+        if self.max_entries is None and self.ttl_seconds is None:
+            return 0
+
+        if kind:
+            directories = [self.root / kind]
+        else:
+            try:
+                directories = [path for path in self.root.iterdir() if path.is_dir()]
+            except OSError:
+                return 0
+        removed = 0
+        now = time.time()
+        for directory in directories:
+            try:
+                files = [path for path in directory.glob("*.json") if path.is_file()]
+            except OSError:
+                continue
+
+            if self.ttl_seconds is not None:
+                kept = []
+                for path in files:
+                    try:
+                        expired = now - path.stat().st_mtime > self.ttl_seconds
+                    except OSError:
+                        continue
+                    if expired:
+                        try:
+                            path.unlink()
+                            removed += 1
+                        except OSError:
+                            pass
+                    else:
+                        kept.append(path)
+                files = kept
+
+            if self.max_entries is not None and len(files) > self.max_entries:
+                def modified_at(path: Path) -> float:
+                    try:
+                        return path.stat().st_mtime
+                    except OSError:
+                        return 0.0
+
+                for path in sorted(files, key=modified_at, reverse=True)[self.max_entries :]:
+                    try:
+                        path.unlink()
+                        removed += 1
+                    except OSError:
+                        pass
+        return removed
 
     def get_transition_analysis(self, track: AudioTrack, config: SmartTransitionConfig) -> dict[str, Any] | None:
         return self.get_json("transition", build_transition_cache_key(track, config))

@@ -20,6 +20,22 @@ jobs:
         with:
           python-version: "3.12"
 
+      - name: Validate release version
+        env:
+          RELEASE_TAG: ${{ github.event.release.tag_name }}
+        run: |
+          python - <<'PY'
+          import os
+          import pathlib
+          import tomllib
+
+          version = tomllib.loads(pathlib.Path("pyproject.toml").read_text())["project"]["version"]
+          release_tag = os.environ.get("RELEASE_TAG") or ""
+          if release_tag and release_tag != f"v{version}":
+              raise SystemExit(f"release tag {release_tag!r} does not match package version {version!r}")
+          print(f"Release version: {version}")
+          PY
+
       - name: Install build tools
         run: python -m pip install --upgrade pip build twine
 
@@ -31,6 +47,21 @@ jobs:
 
       - name: Build distributions
         run: python -m build
+
+      - name: Validate built artifact version
+        run: |
+          python - <<'PY'
+          import pathlib
+          import tomllib
+
+          version = tomllib.loads(pathlib.Path("pyproject.toml").read_text())["project"]["version"]
+          artifacts = sorted(path.name for path in pathlib.Path("dist").glob("veloura_audio-*"))
+          expected = {f"veloura_audio-{version}.tar.gz", f"veloura_audio-{version}-py3-none-any.whl"}
+          missing = expected.difference(artifacts)
+          if missing:
+              raise SystemExit(f"missing expected artifacts: {sorted(missing)}; found: {artifacts}")
+          print(f"Built artifacts match {version}")
+          PY
 
       - name: Check distributions
         run: python -m twine check dist/*

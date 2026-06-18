@@ -14,6 +14,7 @@ from veloura.audio import (
     transition_preset,
 )
 from veloura.audio.resolver import require_yt_dlp
+from veloura.audio.resolver import validate_query_scheme
 from veloura.cli import main
 import veloura.cli as cli_module
 
@@ -71,6 +72,13 @@ class VelouraPublicApiTests(unittest.TestCase):
             require_yt_dlp()
         except RuntimeError as exc:
             self.assertIn("veloura-audio[stream]", str(exc))
+
+    def test_stream_resolver_rejects_unsupported_url_schemes(self):
+        with self.assertRaises(ValueError):
+            validate_query_scheme("file:///etc/passwd", ("http", "https"))
+
+        validate_query_scheme("artist: song title", ("http", "https"))
+        validate_query_scheme("https://example.test/song", ("http", "https"))
 
     def test_cli_reports_runtime_errors_without_traceback(self):
         async def fail_resolve(_args):

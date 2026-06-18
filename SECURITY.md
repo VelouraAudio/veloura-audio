@@ -18,3 +18,7 @@ Veloura can call FFmpeg and, when the `stream` extra is installed, `yt-dlp`.
 Applications that expose URL or search-based playback to public users should
 rate-limit requests, keep permission checks in the application, and treat remote
 media as untrusted input.
+
+The Discord example includes conservative public-bot defaults, but production
+bots should still set a queue cap, resolver timeout, cache limits, and a DJ role
+or equivalent permission model for their own server policy.

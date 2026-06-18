@@ -14,7 +14,8 @@ Veloura is split into a small set of audio primitives:
   crossfade duration limits.
 - `veloura.audio.beat` analyzes beat energy and plans beat-aware transitions.
 - `FileAnalysisCache` stores transition analysis in JSON files keyed by source
-  and config fingerprints.
+  and config fingerprints, with optional max-entry and TTL pruning for
+  long-running services.
 
 The core package does not own chat commands, database schemas, playlists,
 permissions, or UI. Those belong in the app that embeds Veloura.

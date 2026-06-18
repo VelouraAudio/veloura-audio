@@ -19,9 +19,16 @@ AudioSourceBase = discord.AudioSource if discord else object
 
 
 class CrossfadeAudioSource(AudioSourceBase):
-    def __init__(self, *, volume: float = MIXER_DEFAULT_VOLUME, crossfade_seconds: float = MIXER_CROSSFADE_SECONDS):
+    def __init__(
+        self,
+        *,
+        volume: float = MIXER_DEFAULT_VOLUME,
+        crossfade_seconds: float = MIXER_CROSSFADE_SECONDS,
+        max_queue_size: int | None = None,
+    ):
         self.volume = volume
         self.crossfade_seconds = crossfade_seconds
+        self.max_queue_size = self._normalize_queue_limit(max_queue_size)
         self.queue: deque[MixerTrack] = deque()
         self.current: MixerTrack | None = None
         self.current_stream: FFmpegPCMStream | None = None
@@ -38,9 +45,18 @@ class CrossfadeAudioSource(AudioSourceBase):
     def is_opus(self) -> bool:
         return False
 
-    def enqueue(self, track: MixerTrack):
+    def _normalize_queue_limit(self, value: int | None) -> int | None:
+        if value is None:
+            return None
+        limit = int(value)
+        return limit if limit > 0 else None
+
+    def enqueue(self, track: MixerTrack) -> MixerTrack:
         with self.lock:
+            if self.max_queue_size is not None and len(self.queue) >= self.max_queue_size:
+                raise OverflowError(f"queue limit reached ({self.max_queue_size})")
             self.queue.append(track)
+            return track
 
     def clear_pending(self):
         if not self.lock.acquire(blocking=False):
@@ -103,6 +119,7 @@ class CrossfadeAudioSource(AudioSourceBase):
                 "crossfade": self._crossfade_locked(self.current),
                 "error": self.last_error,
                 "busy": not acquired,
+                "queue_limit": self.max_queue_size,
             }
         finally:
             if acquired:

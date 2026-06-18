@@ -1,11 +1,14 @@
 """Stream URL resolution for the Veloura audio engine."""
 
 import asyncio
+from urllib.parse import urlparse
 
 from .cache import FileAnalysisCache
 from .constants import YDL_STREAM_OPTIONS
 from .models import MixerTrack
 from .transition import SmartTransitionConfig, prepare_smart_transition
+
+DEFAULT_ALLOWED_URL_SCHEMES = ("http", "https")
 
 
 def require_yt_dlp():
@@ -19,6 +22,19 @@ def require_yt_dlp():
     return yt_dlp
 
 
+def validate_query_scheme(query: str, allowed_url_schemes: tuple[str, ...] | None) -> None:
+    if not allowed_url_schemes:
+        return
+    parsed = urlparse(query)
+    if not parsed.scheme:
+        return
+    if "://" not in query and parsed.scheme not in {"file", "ftp", "sftp"}:
+        return
+    allowed = {scheme.lower() for scheme in allowed_url_schemes}
+    if parsed.scheme.lower() not in allowed:
+        raise ValueError(f"unsupported URL scheme for stream resolution: {parsed.scheme}")
+
+
 async def resolve_stream_track(
     query: str,
     requester_id: int = 0,
@@ -30,10 +46,17 @@ async def resolve_stream_track(
     transition_config: SmartTransitionConfig | None = None,
     cached_transition_analysis: dict | None = None,
     analysis_cache: FileAnalysisCache | None = None,
+    timeout: float | None = None,
+    ydl_options: dict | None = None,
+    allowed_url_schemes: tuple[str, ...] | None = DEFAULT_ALLOWED_URL_SCHEMES,
 ) -> MixerTrack:
     def resolve() -> MixerTrack:
         yt_dlp = require_yt_dlp()
-        with yt_dlp.YoutubeDL(YDL_STREAM_OPTIONS) as ydl:
+        validate_query_scheme(query, allowed_url_schemes)
+        options = dict(YDL_STREAM_OPTIONS)
+        if ydl_options:
+            options.update(ydl_options)
+        with yt_dlp.YoutubeDL(options) as ydl:
             info = ydl.extract_info(query, download=False)
             if info and info.get("entries"):
                 info = next((entry for entry in info["entries"] if entry), None)
@@ -56,15 +79,17 @@ async def resolve_stream_track(
                 payload=payload,
             )
 
-    track = await asyncio.to_thread(resolve)
+    resolution = asyncio.to_thread(resolve)
+    track = await asyncio.wait_for(resolution, timeout=timeout) if timeout else await resolution
     if transition_config:
         if analysis_cache and not cached_transition_analysis:
-            track = await asyncio.to_thread(analysis_cache.prepare_transition, track, transition_config)
+            analysis = asyncio.to_thread(analysis_cache.prepare_transition, track, transition_config)
         else:
-            track = await asyncio.to_thread(
+            analysis = asyncio.to_thread(
                 prepare_smart_transition,
                 track,
                 transition_config,
                 cached_transition_analysis,
             )
+        track = await asyncio.wait_for(analysis, timeout=timeout) if timeout else await analysis
     return track

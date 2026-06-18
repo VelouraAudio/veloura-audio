@@ -29,7 +29,7 @@ your project to one bot implementation.
 - `yt-dlp` only when resolving online stream/search inputs
 - `discord.py` and `PyNaCl` only when using the Discord audio source directly
 
-## 0.6.2 Hardening Snapshot
+## 0.6.3 Hardening Snapshot
 
 | Area | Fixed behavior |
 | --- | --- |
@@ -195,11 +195,15 @@ Use Veloura as the audio transition layer:
 from veloura.audio import CrossfadeAudioSource, resolve_stream_track, transition_preset
 
 config = transition_preset("streamer")
-source = CrossfadeAudioSource(crossfade_seconds=config.base_crossfade_seconds)
+source = CrossfadeAudioSource(
+    crossfade_seconds=config.base_crossfade_seconds,
+    max_queue_size=50,
+)
 
 track = await resolve_stream_track(
     "artist song official audio",
     transition_config=config,
+    timeout=35,
 )
 
 source.enqueue(track)
@@ -225,9 +229,25 @@ slash-command sync is much faster than global sync.
 When inviting the bot, enable the `bot` and `applications.commands` scopes and
 grant Connect/Speak voice permissions.
 
-For public bots, treat user search terms and URLs as untrusted input. Keep
-permission checks in the bot, rate-limit stream resolution, and avoid exposing
-`yt-dlp` resolution to users who should not be able to trigger network lookups.
+The example includes public-bot guardrails: same-voice-channel controls,
+optional DJ role checks, mention escaping, queue caps, per-user `/play`
+cooldowns, resolver timeouts, and bounded analysis cache storage. Useful
+environment variables:
+
+- `VELOURA_DJ_ROLE_ID`: require a Discord role for `/play`, `/skip`, `/stop`,
+  and `/volume`.
+- `VELOURA_MAX_QUEUE_SIZE`: cap pending tracks per server. Default: `50`.
+- `VELOURA_PLAY_COOLDOWN_SECONDS`: per-user `/play` cooldown. Default: `5`.
+- `VELOURA_RESOLVE_TIMEOUT_SECONDS`: cap stream lookup and analysis waits.
+  Default: `35`.
+- `VELOURA_CACHE_MAX_ENTRIES`: cap transition analysis cache files. Default:
+  `1000`.
+- `VELOURA_CACHE_TTL_SECONDS`: expire old cache files. Default: `604800`.
+
+For public bots, still treat user search terms and URLs as untrusted input.
+Keep permission checks in your app, rate-limit stream resolution, and avoid
+exposing `yt-dlp` resolution to users who should not be able to trigger network
+lookups.
 
 ## Standalone Example
 
@@ -266,6 +286,10 @@ but Veloura credits the sources so the demo has clear provenance.
   FFmpeg executable instead of the bundled provider.
 - Set `VELOURA_YTDLP_SOURCE_ADDRESS` only when you need `yt-dlp` to use a
   specific outbound network interface.
+- Pass `max_queue_size` to `CrossfadeAudioSource` or `PCMQueuePlayer` when the
+  queue is exposed to public users.
+- Use `FileAnalysisCache(max_entries=..., ttl_seconds=...)` for long-running
+  bots or services.
 - Install system FFmpeg if you want to use the standalone `ffplay` example.
 - Install `veloura-audio[stream]` when resolving YouTube URLs or search
   queries through `yt-dlp`.
