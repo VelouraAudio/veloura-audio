@@ -29,7 +29,7 @@ your project to one bot implementation.
 - `yt-dlp` only when resolving online stream/search inputs
 - `discord.py` and `PyNaCl` only when using the Discord audio source directly
 
-## 0.6.1 Hardening Snapshot
+## 0.6.2 Hardening Snapshot
 
 | Area | Fixed behavior |
 | --- | --- |
