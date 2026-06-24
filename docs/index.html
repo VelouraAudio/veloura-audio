@@ -50,7 +50,7 @@
         <div class="feature-grid" aria-label="Core features">
           <article>
             <h2>Queue Playback</h2>
-            <p>Use <code>PCMQueuePlayer</code> for frame reads, snapshots, skips, and queue control outside Discord.</p>
+            <p>Use <code>QueuePlayer</code> for frame reads, snapshots, skips, and queue control outside Discord.</p>
           </article>
           <article>
             <h2>Smart Transitions</h2>
@@ -65,15 +65,30 @@
 
       <section id="hardening" class="section hardening-section">
         <div class="demo-header">
-          <p class="section-label">0.6.3 Hardening</p>
-          <h2>Bugfixes that make Veloura safer to ship.</h2>
+          <p class="section-label">0.6.4 API Polish</p>
+          <h2>Cleaner public names, same stable engine.</h2>
           <p>
-            This patch focuses on reliability: clearer failures, safer defaults,
-            cross-platform runtime behavior, and file renders that match prepared
-            transition settings more closely.
+            This patch keeps the hardening work from 0.6.3 and improves the
+            developer-facing path: a friendlier player import, clearer install
+            docs, and less preset noise for new users.
           </p>
         </div>
-        <div class="fix-grid" aria-label="Bugfix summary">
+        <div class="fix-grid" aria-label="Release summary">
+          <article>
+            <span class="fix-badge">API</span>
+            <h3>QueuePlayer import</h3>
+            <p><code>QueuePlayer</code> is the friendly public name; <code>PCMQueuePlayer</code> remains supported.</p>
+          </article>
+          <article>
+            <span class="fix-badge">Docs</span>
+            <h3>Install versus import</h3>
+            <p>Install <code>veloura-audio</code>, then import <code>veloura</code> in Python.</p>
+          </article>
+          <article>
+            <span class="fix-badge">AutoMix</span>
+            <h3>Clearer pair prep</h3>
+            <p>Docs separate explicit track-pair preparation from the player queue helper.</p>
+          </article>
           <article>
             <span class="fix-badge">Runtime</span>
             <h3>Visible track errors</h3>
@@ -114,7 +129,8 @@
           <p>
             The base install includes a bundled FFmpeg provider for decoding and
             analysis. Add stream resolution or Discord voice support when your
-            product needs it.
+            product needs it. Install the PyPI package as <code>veloura-audio</code>;
+            import it in Python as <code>veloura</code>.
           </p>
         </div>
         <div class="command-list" aria-label="Install commands">
@@ -150,10 +166,10 @@
             the next transition when both tracks are known.
           </p>
         </div>
-        <pre class="code-panel"><code>from veloura.audio import AudioTrack, PCMQueuePlayer, transition_preset
+        <pre class="code-panel"><code>from veloura.audio import AudioTrack, QueuePlayer, transition_preset
 
 config = transition_preset("automix")
-player = PCMQueuePlayer(
+player = QueuePlayer(
     volume=0.65,
     crossfade_seconds=config.base_crossfade_seconds,
 )
@@ -216,7 +232,7 @@ snapshot = player.snapshot().to_dict()</code></pre>
           <h2>Listen to a rendered ending transition.</h2>
           <p>
             A short demo showing Veloura blending one CC0 music track into another.
-            The clip was rendered with <code>PCMQueuePlayer</code> and bundled as a
+            The clip was rendered with <code>QueuePlayer</code> and bundled as a
             listenable example of real-time queue playback.
           </p>
         </div>
@@ -224,7 +240,7 @@ snapshot = player.snapshot().to_dict()</code></pre>
           <div class="audio-demo">
             <div>
               <h3>Veloura CC0 Music Transition</h3>
-              <p>Two CC0 music excerpts blended with an equal-power ending transition.</p>
+              <p>One CC0 music excerpt blended into another with an equal-power ending transition.</p>
             </div>
             <audio id="demo-audio" controls preload="metadata" src="./assets/veloura-transition-demo.wav">
               Your browser does not support the audio element.
@@ -415,7 +431,7 @@ python examples/discord_slash_bot.py</code></pre>
           </article>
           <article>
             <h3>Music Apps</h3>
-            <p>Use <code>PCMQueuePlayer</code> as the audio engine behind desktop, web, or mobile-style queue products.</p>
+            <p>Use <code>QueuePlayer</code> as the audio engine behind desktop, web, or mobile-style queue products.</p>
           </article>
         </div>
       </section>

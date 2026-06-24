@@ -6,8 +6,9 @@ Veloura is split into a small set of audio primitives:
 - `FFmpegPCMStream` decodes a track into 48 kHz stereo signed 16-bit PCM.
 - `CrossfadeAudioSource` mixes the current and next PCM streams with an
   equal-power fade curve and can act as a Discord audio adapter.
-- `PCMQueuePlayer` exposes queue controls, frame reads, snapshots, and AutoMix
-  pair preparation for apps that are not Discord voice clients.
+- `QueuePlayer` exposes queue controls, frame reads, snapshots, and AutoMix
+  pair preparation for apps that are not Discord voice clients. `PCMQueuePlayer`
+  remains available as the precise compatibility name.
 - `CrossfadeSession` keeps compatibility with older bot integrations that
   manage app-specific queue objects.
 - `SmartTransitionConfig` controls silence trimming, loudness normalization, and

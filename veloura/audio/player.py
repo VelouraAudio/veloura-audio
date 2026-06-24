@@ -128,3 +128,8 @@ class PCMQueuePlayer:
             analysis_seconds=analysis_seconds,
             timeout=timeout,
         )
+
+
+# Friendly public name. Keep PCMQueuePlayer as the precise, backwards-compatible
+# name for users who already imported it.
+QueuePlayer = PCMQueuePlayer

@@ -48,7 +48,7 @@ from .lossless import (
 )
 from .models import AudioTrack, MixerTrack
 from .pcm import pcm_add, pcm_mul, pcm_rms
-from .player import PCMQueuePlayer, QueueSnapshot
+from .player import PCMQueuePlayer, QueuePlayer, QueueSnapshot
 from .presets import (
     AUTOMIX,
     BROADCAST_SMOOTH,
@@ -114,6 +114,7 @@ __all__ = [
     "pcm_mul",
     "pcm_rms",
     "PCMQueuePlayer",
+    "QueuePlayer",
     "QueueSnapshot",
     "AUTOMIX",
     "BROADCAST_SMOOTH",

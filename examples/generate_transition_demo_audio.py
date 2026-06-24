@@ -24,7 +24,7 @@ from veloura.audio import (
     AudioTrack,
     FRAME_RATE,
     LosslessTransitionConfig,
-    PCMQueuePlayer,
+    QueuePlayer,
     render_lossless_transition,
 )
 from veloura.audio.ffmpeg_binary import require_ffmpeg
@@ -35,7 +35,7 @@ FRAME_DURATION = 0.02
 CLIP_SECONDS = 9.0
 CROSSFADE_SECONDS = 4.0
 OUTPUT_SECONDS_LIMIT = 16.0
-USER_AGENT = "veloura-audio-demo/0.6.3"
+USER_AGENT = "veloura-audio-demo/0.6.4"
 DEFAULT_QUEUE_OUTPUT = PROJECT_ROOT / "docs" / "assets" / "veloura-transition-demo.wav"
 DEFAULT_LOSSLESS_OUTPUT = PROJECT_ROOT / "docs" / "assets" / "veloura-lossless-transition-demo.wav"
 DEFAULT_LOSSLESS_FLAC_OUTPUT = PROJECT_ROOT / "docs" / "assets" / "veloura-lossless-transition-demo.flac"
@@ -209,7 +209,7 @@ def render_queue_transition(first: Path, second: Path, output: Path) -> None:
     output.parent.mkdir(parents=True, exist_ok=True)
     current, next_track = make_tracks(first, second)
 
-    player = PCMQueuePlayer(volume=0.80, crossfade_seconds=CROSSFADE_SECONDS)
+    player = QueuePlayer(volume=0.80, crossfade_seconds=CROSSFADE_SECONDS)
     player.enqueue(current)
     player.enqueue(next_track)
 

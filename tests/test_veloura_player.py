@@ -1,6 +1,6 @@
 import unittest
 
-from veloura.audio import AudioTrack, BeatProfile, PCMQueuePlayer, transition_preset
+from veloura.audio import AudioTrack, BeatProfile, PCMQueuePlayer, QueuePlayer, transition_preset
 
 
 def profile(source: str, *, bpm: float, cue_in: float, cue_out: float) -> BeatProfile:
@@ -17,6 +17,13 @@ def profile(source: str, *, bpm: float, cue_in: float, cue_out: float) -> BeatPr
 
 
 class PCMQueuePlayerTests(unittest.TestCase):
+    def test_queue_player_alias_is_public_player(self):
+        self.assertIs(QueuePlayer, PCMQueuePlayer)
+        player = QueuePlayer(volume=0.5, crossfade_seconds=7)
+
+        self.assertIsInstance(player, PCMQueuePlayer)
+        player.stop()
+
     def test_player_exposes_typed_snapshot(self):
         player = PCMQueuePlayer(volume=0.5, crossfade_seconds=7)
         track = AudioTrack.from_source("song-a.mp3", title="Song A", duration=180)

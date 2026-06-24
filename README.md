@@ -29,10 +29,14 @@ your project to one bot implementation.
 - `yt-dlp` only when resolving online stream/search inputs
 - `discord.py` and `PyNaCl` only when using the Discord audio source directly
 
-## 0.6.3 Hardening Snapshot
+## 0.6.4 API Polish Snapshot
 
-| Area | Fixed behavior |
+| Area | What changed |
 | --- | --- |
+| Public player API | `QueuePlayer` is now the friendly import name for app playback; `PCMQueuePlayer` remains supported. |
+| Onboarding | Docs now explain the PyPI package name (`veloura-audio`) versus the Python import name (`veloura`). |
+| AutoMix docs | Module-level pair preparation and player queue helpers are documented as separate use cases. |
+| Preset docs | Canonical presets are shown first, with compatibility aliases kept out of the main path. |
 | Playback failures | Bad FFmpeg streams now surface through queue snapshot errors instead of disappearing silently. |
 | CLI health checks | `python -m veloura doctor` rejects invalid configured FFmpeg paths. |
 | Cross-platform playback | PCM stream reads no longer depend on Unix-only pipe `select()` behavior. |
@@ -74,10 +78,18 @@ python -c "import veloura; print(veloura.__version__)"
 python -m veloura doctor
 ```
 
+The PyPI distribution is named `veloura-audio`; the Python import package is
+`veloura`:
+
+```python
+import veloura
+from veloura.audio import AudioTrack, QueuePlayer
+```
+
 ## Quick Start
 
 ```python
-from veloura.audio import AudioTrack, PCMQueuePlayer, transition_preset
+from veloura.audio import AudioTrack, QueuePlayer, transition_preset
 
 config = transition_preset("streamer")
 
@@ -87,7 +99,7 @@ track = AudioTrack.from_source(
     duration=184,
 )
 
-player = PCMQueuePlayer(volume=0.65, crossfade_seconds=config.base_crossfade_seconds)
+player = QueuePlayer(volume=0.65, crossfade_seconds=config.base_crossfade_seconds)
 player.enqueue(track)
 
 frame = player.read_frame()
@@ -143,18 +155,19 @@ cache, or `--no-cache` when comparing fresh analysis.
 - `low-latency`: shorter analysis windows for weaker machines or fast queues
 - `automix`: beat-aware pair planning with conservative tempo matching
 
-Aliases such as `streamer-safe`, `broadcast-smooth`, `auto-mix`, and `fast` are also
-available.
+Compatibility aliases such as `streamer-safe`, `broadcast-smooth`,
+`auto-mix`, and `fast` remain available for older integrations.
 
-For adjacent tracks, call `prepare_automix_transition_pair` before playback of
-the next track starts. It analyzes beat windows, applies a pair-specific
-crossfade length, trims weak intro audio on confident matches, and nudges tempo
-only within a small safe range.
+Use `prepare_automix_transition_pair(...)` when you have two explicit
+`AudioTrack` objects and want to prepare their transition before playback. It
+analyzes beat windows, applies a pair-specific crossfade length, trims weak
+intro audio on confident matches, and nudges tempo only within a small safe
+range.
 
-Apps that manage playback through `PCMQueuePlayer` can call
-`player.prepare_next_transition_pair(...)` when the current and next track are
-known. Discord bots can keep using `CrossfadeAudioSource` as an adapter for
-Discord voice playback.
+Apps that manage playback through `QueuePlayer` can call
+`player.prepare_next_transition_pair(...)` as a queue convenience method when
+the current and next track are already inside the player. Discord bots can keep
+using `CrossfadeAudioSource` as an adapter for Discord voice playback.
 
 ## Lossless Transition Rendering
 
@@ -263,7 +276,7 @@ python examples/streamer_player.py ./song-a.mp3 ./song-b.mp3 --cache-dir ./velou
 ## Free Transition Demos
 
 The website includes small playable transition clips rendered from CC0 music
-sources. One demo is rendered through `PCMQueuePlayer`; the lossless demo is
+sources. One demo is rendered through `QueuePlayer`; the lossless demo is
 rendered through `python -m veloura render-transition` into FLAC and WAV output.
 Regenerate them with:
 
@@ -286,7 +299,7 @@ but Veloura credits the sources so the demo has clear provenance.
   FFmpeg executable instead of the bundled provider.
 - Set `VELOURA_YTDLP_SOURCE_ADDRESS` only when you need `yt-dlp` to use a
   specific outbound network interface.
-- Pass `max_queue_size` to `CrossfadeAudioSource` or `PCMQueuePlayer` when the
+- Pass `max_queue_size` to `CrossfadeAudioSource` or `QueuePlayer` when the
   queue is exposed to public users.
 - Use `FileAnalysisCache(max_entries=..., ttl_seconds=...)` for long-running
   bots or services.
