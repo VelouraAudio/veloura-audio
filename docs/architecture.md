@@ -9,6 +9,9 @@ Veloura is split into a small set of audio primitives:
 - `QueuePlayer` exposes queue controls, frame reads, snapshots, and AutoMix
   pair preparation for apps that are not Discord voice clients. `PCMQueuePlayer`
   remains available as the precise compatibility name.
+- `plan_slm_transition` is Veloura's public Small Listening Model planner. It
+  chooses automatic pair-specific crossfade seconds locally from duration,
+  safety caps, and optional beat profiles.
 - `CrossfadeSession` keeps compatibility with older bot integrations that
   manage app-specific queue objects.
 - `SmartTransitionConfig` controls silence trimming, loudness normalization, and

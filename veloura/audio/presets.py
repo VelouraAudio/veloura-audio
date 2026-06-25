@@ -69,6 +69,8 @@ AUTOMIX = normalize_transition_config(
 PRESETS = {
     "automix": AUTOMIX,
     "auto-mix": AUTOMIX,
+    "slm": AUTOMIX,
+    "veloura-auto": AUTOMIX,
     "streamer": STREAMER_SAFE,
     "streamer-safe": STREAMER_SAFE,
     "broadcast": BROADCAST_SMOOTH,

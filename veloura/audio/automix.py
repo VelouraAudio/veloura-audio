@@ -12,7 +12,8 @@ from .beat import (
     plan_beat_transition,
 )
 from .models import AudioTrack
-from .transition import SmartTransitionConfig, clamp, normalize_transition_config, planned_crossfade_seconds
+from .slm import SLMTransitionPlan, plan_slm_transition
+from .transition import SmartTransitionConfig, clamp, normalize_transition_config
 
 AUTOMIX_VERSION = 1
 
@@ -26,6 +27,7 @@ class AutoMixPlan:
     confidence: float
     reason: str
     beat_plan: BeatTransitionPlan | None = None
+    slm_plan: SLMTransitionPlan | None = None
 
 
 def tempo_ratio_for_bpm(current_bpm: float, next_bpm: float, *, max_adjustment: float = 0.06) -> float:
@@ -53,18 +55,26 @@ def plan_automix_transition(
     """Plan a pair-specific transition and fall back conservatively when analysis is weak."""
 
     config = normalize_transition_config(config)
-    base_crossfade = planned_crossfade_seconds(current, config)
+    slm_plan = plan_slm_transition(
+        current,
+        next_track,
+        config,
+        current_profile=current_profile,
+        next_profile=next_profile,
+    )
+    base_crossfade = slm_plan.crossfade_seconds
     current_trim_end = float(current.trim_end or 0.0)
     next_trim_start = float(next_track.trim_start or 0.0)
 
     if not current_profile or not next_profile:
         return AutoMixPlan(
-            crossfade_seconds=round(min(base_crossfade, 4.0), 2),
+            crossfade_seconds=round(base_crossfade, 2),
             current_trim_end=round(current_trim_end, 3),
             next_trim_start=round(next_trim_start, 3),
             next_tempo=1.0,
-            confidence=0.0,
+            confidence=slm_plan.confidence,
             reason="fallback-no-beat-profile",
+            slm_plan=slm_plan,
         )
 
     beat_plan = plan_beat_transition(
@@ -83,11 +93,17 @@ def plan_automix_transition(
             confidence=round(confidence, 3),
             reason=beat_plan.reason,
             beat_plan=beat_plan,
+            slm_plan=slm_plan,
         )
 
+    beat_ceiling = (
+        slm_plan.crossfade_seconds
+        if slm_plan.safety_capped
+        else config.max_crossfade_seconds
+    )
     crossfade_seconds = clamp(
-        beat_plan.crossfade_seconds,
-        config.min_crossfade_seconds,
+        min(beat_plan.crossfade_seconds, beat_ceiling),
+        0.0,
         config.max_crossfade_seconds,
     )
     duration = float(current.duration or 0.0)
@@ -108,6 +124,7 @@ def plan_automix_transition(
         confidence=round(confidence, 3),
         reason=f"automix-{beat_plan.reason}",
         beat_plan=beat_plan,
+        slm_plan=slm_plan,
     )
 
 

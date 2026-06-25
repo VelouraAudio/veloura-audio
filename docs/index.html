@@ -19,6 +19,7 @@
       <nav class="nav" aria-label="Primary navigation">
         <a href="#install">Install</a>
         <a href="#api">API</a>
+        <a href="#slm">SLM</a>
         <a href="#automix">AutoMix</a>
         <a href="#demo">Demo</a>
         <a href="#lossless">Lossless</a>
@@ -36,7 +37,8 @@
           <h1>Veloura Audio</h1>
           <p class="hero-copy">
             A reusable audio engine for equal-power crossfades, beat-aware planning,
-            AutoMix-style transitions, and Discord-independent PCM playback.
+            SLM automatic timing, AutoMix-style transitions, and Discord-independent
+            PCM playback.
           </p>
           <div class="hero-actions" aria-label="Primary actions">
             <a class="button primary" href="#install">Install</a>
@@ -53,8 +55,8 @@
             <p>Use <code>QueuePlayer</code> for frame reads, snapshots, skips, and queue control outside Discord.</p>
           </article>
           <article>
-            <h2>Smart Transitions</h2>
-            <p>Trim silence, normalize loudness, and adapt crossfade timing to track duration and analysis results.</p>
+            <h2>SLM Auto Timing</h2>
+            <p>Let Veloura choose pair-specific crossfade seconds from duration, safety caps, and beat confidence.</p>
           </article>
           <article>
             <h2>Lossless Renders</h2>
@@ -65,15 +67,30 @@
 
       <section id="hardening" class="section hardening-section">
         <div class="demo-header">
-          <p class="section-label">0.6.4 API Polish</p>
-          <h2>Cleaner public names, same stable engine.</h2>
+          <p class="section-label">0.6.5 SLM Auto Timing</p>
+          <h2>Automatic transition timing, no manual guesswork.</h2>
           <p>
-            This patch keeps the hardening work from 0.6.3 and improves the
-            developer-facing path: a friendlier player import, clearer install
-            docs, and less preset noise for new users.
+            This patch adds Veloura's public Small Listening Model planner: a
+            local deterministic scorer that chooses crossfade duration for each
+            pair before AutoMix refines the transition.
           </p>
         </div>
         <div class="fix-grid" aria-label="Release summary">
+          <article>
+            <span class="fix-badge">SLM</span>
+            <h3>Auto crossfade timing</h3>
+            <p><code>plan_slm_transition</code> chooses transition seconds from pair-level audio signals.</p>
+          </article>
+          <article>
+            <span class="fix-badge">AutoMix</span>
+            <h3>SLM as base planner</h3>
+            <p>AutoMix now starts from the SLM estimate before beat-aware refinement.</p>
+          </article>
+          <article>
+            <span class="fix-badge">Preset</span>
+            <h3>SLM aliases</h3>
+            <p><code>slm</code> and <code>veloura-auto</code> map to automatic pair planning.</p>
+          </article>
           <article>
             <span class="fix-badge">API</span>
             <h3>QueuePlayer import</h3>
@@ -157,6 +174,26 @@
         </div>
       </section>
 
+      <section id="slm" class="section split">
+        <div>
+          <p class="section-label">Small Listening Model</p>
+          <h2>Automatic crossfade timing for each pair.</h2>
+          <p>
+            Veloura SLM is public, local, and deterministic. It does not call an
+            external AI service. It scores the current and next track, then
+            chooses practical crossfade seconds so users do not have to guess.
+          </p>
+        </div>
+        <pre class="code-panel"><code>from veloura.audio import AudioTrack, plan_slm_transition, transition_preset
+
+config = transition_preset("slm")
+current = AudioTrack.from_source("track-a.flac", title="Track A", duration=184)
+next_track = AudioTrack.from_source("track-b.flac", title="Track B", duration=196)
+
+plan = plan_slm_transition(current, next_track, config)
+print(plan.crossfade_seconds, plan.reason)</code></pre>
+      </section>
+
       <section id="api" class="section split">
         <div>
           <p class="section-label">Player API</p>
@@ -219,9 +256,10 @@ snapshot = player.snapshot().to_dict()</code></pre>
           <p class="section-label">AutoMix</p>
           <h2>Pair-aware transitions with conservative fallbacks.</h2>
           <p>
-            AutoMix analyzes current outro and next intro beat windows, then applies a
-            pair-specific crossfade, intro trim, and small tempo nudge when confidence
-            is high. If analysis is weak, it keeps the blend short.
+            AutoMix starts from the SLM crossfade estimate, analyzes current
+            outro and next intro beat windows, then applies pair-specific timing,
+            intro trim, and a small tempo nudge when confidence is high. If
+            analysis is weak, it keeps the blend short.
           </p>
         </div>
       </section>

@@ -59,6 +59,11 @@ from .presets import (
 )
 from .resolver import resolve_stream_track
 from .session import CrossfadeAdvance, CrossfadeSession
+from .slm import (
+    SLM_TRANSITION_VERSION,
+    SLMTransitionPlan,
+    plan_slm_transition,
+)
 from .transition import (
     LoudnessProfile,
     SilenceProfile,
@@ -125,6 +130,9 @@ __all__ = [
     "resolve_stream_track",
     "CrossfadeAdvance",
     "CrossfadeSession",
+    "SLM_TRANSITION_VERSION",
+    "SLMTransitionPlan",
+    "plan_slm_transition",
     "LoudnessProfile",
     "SilenceProfile",
     "SmartTransitionConfig",

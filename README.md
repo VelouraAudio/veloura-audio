@@ -13,6 +13,7 @@ your project to one bot implementation.
 - Equal-power crossfade mixing for signed 16-bit PCM audio
 - Lossless file transition rendering to FLAC, WAV, ALAC, or AIFF
 - Discord-independent PCM queue player with snapshots and playback controls
+- Public Small Listening Model planner for automatic pair-specific crossfade timing
 - Smart transition planning based on track duration, silence trim, and loudness
 - Beat/BPM analysis with beat-aware transition plans
 - Project-local or user-cache transition analysis storage
@@ -29,10 +30,13 @@ your project to one bot implementation.
 - `yt-dlp` only when resolving online stream/search inputs
 - `discord.py` and `PyNaCl` only when using the Discord audio source directly
 
-## 0.6.4 API Polish Snapshot
+## 0.6.5 SLM Auto Timing Snapshot
 
 | Area | What changed |
 | --- | --- |
+| Small Listening Model | Added `plan_slm_transition(...)` for automatic crossfade timing without manual seconds. |
+| AutoMix | AutoMix now uses the SLM timing estimate before beat-aware refinement. |
+| Presets | `slm` and `veloura-auto` aliases map to the AutoMix configuration for automatic pair planning. |
 | Public player API | `QueuePlayer` is now the friendly import name for app playback; `PCMQueuePlayer` remains supported. |
 | Onboarding | Docs now explain the PyPI package name (`veloura-audio`) versus the Python import name (`veloura`). |
 | AutoMix docs | Module-level pair preparation and player queue helpers are documented as separate use cases. |
@@ -156,13 +160,34 @@ cache, or `--no-cache` when comparing fresh analysis.
 - `automix`: beat-aware pair planning with conservative tempo matching
 
 Compatibility aliases such as `streamer-safe`, `broadcast-smooth`,
-`auto-mix`, and `fast` remain available for older integrations.
+`auto-mix`, `slm`, `veloura-auto`, and `fast` remain available for older
+integrations.
+
+## Veloura SLM Auto Timing
+
+Veloura's public SLM means **Small Listening Model**. It is deterministic,
+local-only, and does not call any external AI service. It chooses a pair-specific
+crossfade duration from track duration, safety caps, and optional beat profiles:
+
+```python
+from veloura.audio import AudioTrack, plan_slm_transition, transition_preset
+
+config = transition_preset("slm")
+current = AudioTrack.from_source("track-a.flac", title="Track A", duration=184)
+next_track = AudioTrack.from_source("track-b.flac", title="Track B", duration=196)
+
+plan = plan_slm_transition(current, next_track, config)
+print(plan.crossfade_seconds, plan.reason)
+```
+
+Use this when your app wants Veloura to choose transition timing instead of
+asking users to set `crossfade_seconds` by hand.
 
 Use `prepare_automix_transition_pair(...)` when you have two explicit
 `AudioTrack` objects and want to prepare their transition before playback. It
 analyzes beat windows, applies a pair-specific crossfade length, trims weak
-intro audio on confident matches, and nudges tempo only within a small safe
-range.
+intro audio on confident matches, uses the SLM crossfade estimate, and nudges
+tempo only within a small safe range.
 
 Apps that manage playback through `QueuePlayer` can call
 `player.prepare_next_transition_pair(...)` as a queue convenience method when
