@@ -67,74 +67,34 @@
 
       <section id="hardening" class="section hardening-section">
         <div class="demo-header">
-          <p class="section-label">0.6.5 SLM Auto Timing</p>
-          <h2>Automatic transition timing, no manual guesswork.</h2>
+          <p class="section-label">0.6.6 Reliability</p>
+          <h2>Bounded stream resolution and safer releases.</h2>
           <p>
-            This patch adds Veloura's public Small Listening Model planner: a
-            local deterministic scorer that chooses crossfade duration for each
-            pair before AutoMix refines the transition.
+            Timed online lookups now run in an isolated process that Veloura can
+            stop cleanly. Manual release checks no longer attempt to republish
+            an existing PyPI version.
           </p>
         </div>
         <div class="fix-grid" aria-label="Release summary">
           <article>
-            <span class="fix-badge">SLM</span>
-            <h3>Auto crossfade timing</h3>
-            <p><code>plan_slm_transition</code> chooses transition seconds from pair-level audio signals.</p>
+            <span class="fix-badge">Resolver</span>
+            <h3>Real timeout cleanup</h3>
+            <p>Timed <code>yt-dlp</code> workers are terminated instead of continuing invisibly in a thread.</p>
           </article>
           <article>
-            <span class="fix-badge">AutoMix</span>
-            <h3>SLM as base planner</h3>
-            <p>AutoMix now starts from the SLM estimate before beat-aware refinement.</p>
+            <span class="fix-badge">Cancel</span>
+            <h3>Cancellation-aware</h3>
+            <p>Cancelling a timed lookup also stops its worker process and releases its resources.</p>
           </article>
           <article>
-            <span class="fix-badge">Preset</span>
-            <h3>SLM aliases</h3>
-            <p><code>slm</code> and <code>veloura-auto</code> map to automatic pair planning.</p>
+            <span class="fix-badge">Release</span>
+            <h3>Build-only manual runs</h3>
+            <p>Manual Actions runs verify distributions without uploading duplicate files to PyPI.</p>
           </article>
           <article>
             <span class="fix-badge">API</span>
-            <h3>QueuePlayer import</h3>
-            <p><code>QueuePlayer</code> is the friendly public name; <code>PCMQueuePlayer</code> remains supported.</p>
-          </article>
-          <article>
-            <span class="fix-badge">Docs</span>
-            <h3>Install versus import</h3>
-            <p>Install <code>veloura-audio</code>, then import <code>veloura</code> in Python.</p>
-          </article>
-          <article>
-            <span class="fix-badge">AutoMix</span>
-            <h3>Clearer pair prep</h3>
-            <p>Docs separate explicit track-pair preparation from the player queue helper.</p>
-          </article>
-          <article>
-            <span class="fix-badge">Runtime</span>
-            <h3>Visible track errors</h3>
-            <p>Bad sources now show up in queue snapshots instead of silently ending playback.</p>
-          </article>
-          <article>
-            <span class="fix-badge">Doctor</span>
-            <h3>Real FFmpeg checks</h3>
-            <p>Configured FFmpeg paths are validated before the CLI reports a healthy setup.</p>
-          </article>
-          <article>
-            <span class="fix-badge">Portable</span>
-            <h3>Windows-safe reads</h3>
-            <p>PCM streaming no longer depends on Unix-only pipe readiness behavior.</p>
-          </article>
-          <article>
-            <span class="fix-badge">Audio</span>
-            <h3>Short clip bounds</h3>
-            <p>Crossfades are clamped for tiny tracks so transitions stay sane.</p>
-          </article>
-          <article>
-            <span class="fix-badge">Render</span>
-            <h3>Gain and tempo parity</h3>
-            <p>Lossless file renders now apply prepared gain and tempo settings.</p>
-          </article>
-          <article>
-            <span class="fix-badge">Cache</span>
-            <h3>Bad cache ignored</h3>
-            <p>Invalid cached transition values fall back to fresh safe planning.</p>
+            <h3>Compatibility retained</h3>
+            <p>Untimed resolution and the public resolver signature continue to work as before.</p>
           </article>
         </div>
       </section>
@@ -442,7 +402,7 @@ python examples/discord_slash_bot.py</code></pre>
           </article>
           <article>
             <h3>Streams</h3>
-            <p>Install <code>veloura-audio[stream]</code> when resolving YouTube URLs or search queries through <code>yt-dlp</code>.</p>
+            <p>Install <code>veloura-audio[stream]</code>. Timed calls require JSON-compatible custom <code>ydl_options</code>.</p>
           </article>
           <article>
             <h3>Discord Voice</h3>

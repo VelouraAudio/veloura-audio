@@ -30,10 +30,13 @@ your project to one bot implementation.
 - `yt-dlp` only when resolving online stream/search inputs
 - `discord.py` and `PyNaCl` only when using the Discord audio source directly
 
-## 0.6.5 SLM Auto Timing Snapshot
+## 0.6.6 Reliability Snapshot
 
 | Area | What changed |
 | --- | --- |
+| Stream timeouts | Timed `yt-dlp` resolution runs in an isolated worker that is terminated on timeout or cancellation. |
+| Resolver compatibility | Calls without a timeout keep the existing in-process behavior, including advanced Python `yt-dlp` options. |
+| Release safety | Manual GitHub Actions runs build and verify artifacts without attempting to republish an existing PyPI version. |
 | Small Listening Model | Added `plan_slm_transition(...)` for automatic crossfade timing without manual seconds. |
 | AutoMix | AutoMix now uses the SLM timing estimate before beat-aware refinement. |
 | Presets | `slm` and `veloura-auto` aliases map to the AutoMix configuration for automatic pair planning. |
@@ -331,6 +334,9 @@ but Veloura credits the sources so the demo has clear provenance.
 - Install system FFmpeg if you want to use the standalone `ffplay` example.
 - Install `veloura-audio[stream]` when resolving YouTube URLs or search
   queries through `yt-dlp`.
+- Keep custom `ydl_options` JSON-compatible when using a resolver `timeout`.
+  Callable hooks remain available for trusted in-process calls with
+  `timeout=None`.
 - Install `veloura-audio[discord]` when using `CrossfadeAudioSource` directly
   with Discord voice playback.
 - Run `python -m veloura presets` to confirm the CLI entry point is installed.

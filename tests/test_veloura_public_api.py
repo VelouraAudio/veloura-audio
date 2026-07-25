@@ -1,6 +1,9 @@
+import asyncio
 import io
 import os
+import sys
 import tempfile
+import time
 import unittest
 from pathlib import Path
 from contextlib import redirect_stderr, redirect_stdout
@@ -13,8 +16,7 @@ from veloura.audio import (
     preset_names,
     transition_preset,
 )
-from veloura.audio.resolver import require_yt_dlp
-from veloura.audio.resolver import validate_query_scheme
+from veloura.audio.resolver import _run_json_worker, require_yt_dlp, validate_query_scheme
 from veloura.cli import main
 import veloura.cli as cli_module
 
@@ -79,6 +81,67 @@ class VelouraPublicApiTests(unittest.TestCase):
 
         validate_query_scheme("artist: song title", ("http", "https"))
         validate_query_scheme("https://example.test/song", ("http", "https"))
+
+    def test_resolver_worker_protocol_returns_metadata(self):
+        script = (
+            "import json,sys;"
+            "request=json.load(sys.stdin);"
+            "json.dump({'ok':True,'info':{'url':request['query']}},sys.stdout)"
+        )
+        response = asyncio.run(
+            _run_json_worker(
+                (sys.executable, "-c", script),
+                {"query": "https://example.test/audio"},
+                timeout=2.0,
+            )
+        )
+
+        self.assertEqual(response["url"], "https://example.test/audio")
+
+    def test_resolver_worker_timeout_terminates_process(self):
+        started = time.monotonic()
+        with self.assertRaises(TimeoutError) as raised:
+            asyncio.run(
+                _run_json_worker(
+                    (sys.executable, "-c", "import time; time.sleep(30)"),
+                    {"query": "anything"},
+                    timeout=0.05,
+                )
+            )
+
+        self.assertLess(time.monotonic() - started, 3.0)
+        self.assertIn("stream resolution exceeded", str(raised.exception))
+
+    def test_resolver_worker_cancellation_terminates_process(self):
+        async def cancel_worker():
+            task = asyncio.create_task(
+                _run_json_worker(
+                    (sys.executable, "-c", "import time; time.sleep(30)"),
+                    {"query": "anything"},
+                    timeout=30.0,
+                )
+            )
+            await asyncio.sleep(0.05)
+            task.cancel()
+            await task
+
+        started = time.monotonic()
+        with self.assertRaises(asyncio.CancelledError):
+            asyncio.run(cancel_worker())
+
+        self.assertLess(time.monotonic() - started, 3.0)
+
+    def test_resolver_worker_rejects_non_json_options(self):
+        with self.assertRaises(ValueError) as raised:
+            asyncio.run(
+                _run_json_worker(
+                    (sys.executable, "-c", ""),
+                    {"options": {"logger": object()}},
+                    timeout=1.0,
+                )
+            )
+
+        self.assertIn("JSON-compatible", str(raised.exception))
 
     def test_cli_reports_runtime_errors_without_traceback(self):
         async def fail_resolve(_args):
